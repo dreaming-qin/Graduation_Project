@@ -1,0 +1,73 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid,830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: 当前文件",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            
+            // 使用IEMOCAP、训练mmin使用的参数，使用vscode调试时需要放到launch.json中
+            "args": [
+                //其它
+                "--dataset_mode","multimodal_miss",
+                "--model","mmin",
+                "--corpus","IEMOCAP",
+                "--name","mmin_IEMOCAP",
+                // --suffix=block_{n_blocks}_run{run_idx}
+                "--suffix","block_{n_blocks}_run{run_idx}", 
+                "--has_test",
+                "--verbose",
+                "--in_mem", 
+                
+                //路径相关
+                "--log_dir","./logs",
+                "--checkpoints_dir","./checkpoints",
+                "--pretrained_path","./checkpoints/CAP_utt_fusion_AVL_run0",
+
+                //一些杂七杂八的参数
+                // --cvNo=$i
+                "--cvNo","1",
+                "--print_freq","10",
+                //--run_idx=$run_idx
+                "--run_idx","0",
+                //--gpu_ids=$gpu 
+                "--gpu_ids","0",
+                "--output_dim","4", 
+                "--cls_layers","128,128",
+                "--AE_layers","256,128,64",
+                "--n_blocks","5",
+                "--num_thread","0",
+                "--dropout_rate","0.5",
+                "--niter","30", 
+                "--niter_decay","30",
+                "--batch_size","128", 
+                "--lr","2e-4",
+                "--ce_weight","1.0",
+                "--mse_weight","4.0",
+                "--cycle_weight","2.0",
+                "--weight_decay","1e-5",
+
+                "--A_type","comparE",
+                "--input_dim_a","130",
+                "--norm_method","trn",
+                "--embd_size_a","128",
+                "--embd_method_a","maxpool",
+
+                "--V_type","denseface",
+                "--input_dim_v","342", 
+                "--embd_size_v","128", 
+                "--embd_method_v","maxpool",
+
+                "--L_type","bert_large", 
+                "--input_dim_l","1024", 
+                "--embd_size_l","128"
+            ]
+        }
+    ]
+}

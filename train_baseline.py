@@ -47,9 +47,6 @@ def clean_chekpoints(expr_name, store_epoch):
         if not checkpoint.startswith(str(store_epoch)+'_') and checkpoint.endswith('pth'):
             os.remove(os.path.join(root, checkpoint))
 
-def deal_parse(opt):
-    pass
-
 if __name__ == '__main__':
     opt = Options().parse()                             # get training options
     logger_path = os.path.join(opt.log_dir, opt.name, str(opt.cvNo)) # get logger path

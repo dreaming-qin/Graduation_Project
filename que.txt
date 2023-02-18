@@ -1,0 +1,6 @@
+1. ['A', 'V', 'L', 'C', 'AE', 'AE_cycle']中的['C', 'AE', 'AE_cycle]都是啥
+'C'是classfier，分类器模型
+'AE'是auto encoder，指的是提出的Imagination Module
+'AE_cycle'指的是Imagination Module用来Cycle Consistency Learning的另一个Imagination Module
+
+
