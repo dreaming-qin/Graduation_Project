@@ -60,6 +60,11 @@ class Options():
         parser.add_argument('--lr_policy', type=str, default='linear', help='learning rate policy. [linear | step | plateau | cosine]')
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
 
+        # 特征压缩参数
+        parser.add_argument('--feat_compress', action='store_true', help='if true, feature compress loss is applied')
+        parser.add_argument('--feat_compress_size', default='16,8', type=str, help='reshaped compressed feature')
+        parser.add_argument('--quality', default=0, type=int, help='reshaped compressed feature')
+
         # expr setting 
         parser.add_argument('--run_idx', type=int, default=1, help='experiment number; for repeat experiment')
         self.isTrain = True
@@ -145,6 +150,8 @@ class Options():
         if opt.suffix:
             suffix = ('_' + opt.suffix.format(**vars(opt))) if opt.suffix != '' else ''
             opt.name = opt.name + suffix
+            if opt.feat_compress:
+                opt.name=opt.name+'_feat'
             print("Expr Name:", opt.name)
         
         self.print_options(opt)

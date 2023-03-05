@@ -8,6 +8,7 @@ from models.networks.fc import FcEncoder
 from models.networks.lstm import LSTMEncoder
 from models.networks.textcnn import TextCNN
 from models.networks.classifier import FcClassifier
+import sys
 
 
 class UttFusionModel(BaseModel):

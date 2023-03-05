@@ -24,13 +24,14 @@
                 "--has_test",
                 "--verbose",
                 "--in_mem", 
+                "--feat_compress", 
                 
                 //路径相关
                 "--log_dir","./logs",
                 "--checkpoints_dir","./checkpoints",
                 "--pretrained_path","./checkpoints/CAP_utt_fusion_AVL_run0",
 
-                //一些杂七杂八的参数
+                //数字相关的参数
                 // --cvNo=$i
                 "--cvNo","1",
                 "--print_freq","10",
@@ -46,27 +47,31 @@
                 "--dropout_rate","0.5",
                 "--niter","30", 
                 "--niter_decay","30",
-                "--batch_size","128", 
+                "--batch_size","130", 
                 "--lr","2e-4",
                 "--ce_weight","1.0",
                 "--mse_weight","4.0",
                 "--cycle_weight","2.0",
                 "--weight_decay","1e-5",
+                "--embd_size","128",
+                "--feat_compress_size","16,8",
+                "--quality","0",
+
 
                 "--A_type","comparE",
                 "--input_dim_a","130",
                 "--norm_method","trn",
-                "--embd_size_a","128",
                 "--embd_method_a","maxpool",
 
                 "--V_type","denseface",
                 "--input_dim_v","342", 
-                "--embd_size_v","128", 
                 "--embd_method_v","maxpool",
 
                 "--L_type","bert_large", 
-                "--input_dim_l","1024", 
-                "--embd_size_l","128"
+                "--input_dim_l","1024",
+
+                // windows下需要添加的
+                "--gpu_ids","-1"
             ]
         }
     ]

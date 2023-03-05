@@ -6,6 +6,7 @@ from data import create_dataset, create_dataset_with_args
 from models import create_model
 from utils.logger import get_logger, ResultRecorder
 from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
+from utils.feature_compress import save_compressed_feat
 
 def make_path(path):
     if not os.path.exists(path):
@@ -116,7 +117,8 @@ if __name__ == '__main__':
             epoch_iter += opt.batch_size
             model.set_input(data)           # unpack data from dataset and apply preprocessing
             model.optimize_parameters(epoch)   # calculate loss functions, get gradients, update network weights
-                
+
+
             if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
@@ -124,12 +126,20 @@ if __name__ == '__main__':
                         ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
 
             iter_data_time = time.time()
-        
-        if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
+
+
+        # cache our model every <save_epoch_freq> epochs
+        if epoch % opt.save_epoch_freq == 0:              
             logger.info('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')
             model.save_networks(epoch)
+            if opt.feat_compress:
+                save_compressed_feat(model.feat_compress,
+                    os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat'),
+                    epoch,opt.quality)
 
+            # save compressed picture
+            
         logger.info('End of training epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate(logger)                     # update learning rates at the end of every epoch.
         
