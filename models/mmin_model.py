@@ -76,8 +76,8 @@ class MMINModel(BaseModel):
             self.criterion_ce = torch.nn.CrossEntropyLoss()
             self.criterion_mse = torch.nn.MSELoss()
             if self.feat_compress_flag:
-                self.criterion_feat_compress=FeatureCompressLoss(self.feat_compress_size)
-            self.criterion_dynamic_weight=DynamicWeightedLoss(4)
+                self.criterion_feat_compress=FeatureCompressLoss()
+            self.criterion_dynamic_weight=DynamicWeightedLoss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             paremeters = [{'params': getattr(self, 'net'+net).parameters()} for net in self.model_names]+\
                 [{'params':p} for p in self.criterion_dynamic_weight.parameters()]
@@ -102,7 +102,7 @@ class MMINModel(BaseModel):
         pretrained_config.gpu_ids = opt.gpu_ids                       # set gpu to the same
         self.pretrained_encoder = UttFusionModel(pretrained_config)
         self.pretrained_encoder.load_networks_cv(pretrained_path)
-        # self.pretrained_encoder.cuda()
+        self.pretrained_encoder.cuda()
         self.pretrained_encoder.eval()
     
     def post_process(self):
@@ -112,9 +112,9 @@ class MMINModel(BaseModel):
         if self.isTrain:
             print('[ Init ] Load parameters from pretrained encoder network')
             f = lambda x: transform_key_for_parallel(x)
-            # self.netA.load_state_dict(f(self.pretrained_encoder.netA.state_dict()))
-            # self.netV.load_state_dict(f(self.pretrained_encoder.netV.state_dict()))
-            # self.netL.load_state_dict(f(self.pretrained_encoder.netL.state_dict()))
+            self.netA.load_state_dict(f(self.pretrained_encoder.netA.state_dict()))
+            self.netV.load_state_dict(f(self.pretrained_encoder.netV.state_dict()))
+            self.netL.load_state_dict(f(self.pretrained_encoder.netL.state_dict()))
         
     def load_from_opt_record(self, file_path):
         opt_content = json.load(open(file_path, 'r'))
@@ -187,11 +187,11 @@ class MMINModel(BaseModel):
         length,height=self.feat_compress_size[0],self.feat_compress_size[1]
         losses_list=[('cla',self.loss_CE),('reg',self.loss_mse),
             ('reg',self.loss_cycle)]
+        self.feat_compress=torch.stack((self.feat_A_miss.reshape(-1,length,height),
+            self.feat_V_miss.reshape(-1,length,height),
+            self.feat_L_miss.reshape(-1,length,height)),
+            dim=1)
         if self.feat_compress_flag:
-            self.feat_compress=torch.stack((self.feat_A_miss.reshape(-1,length,height),
-                self.feat_V_miss.reshape(-1,length,height)),
-                self.feat_L_miss.reshape(-1,length,height),
-                dim=1)
             self.loss_feat_compress=self.criterion_feat_compress(self.feat_compress)
             losses_list.append(('reg',self.loss_feat_compress))
         loss=self.criterion_dynamic_weight(losses_list)

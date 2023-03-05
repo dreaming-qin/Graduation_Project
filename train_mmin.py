@@ -133,7 +133,7 @@ if __name__ == '__main__':
             logger.info('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')
             model.save_networks(epoch)
-            if opt.feat_compress:
+            if opt.save_compress_pic:
                 save_compressed_feat(model.feat_compress,
                     os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat'),
                     epoch,opt.quality)
