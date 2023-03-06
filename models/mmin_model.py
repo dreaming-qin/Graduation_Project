@@ -13,7 +13,7 @@ from models.networks.autoencoder import ResidualAE
 from models.utt_fusion_model import UttFusionModel
 from .utils.config import OptConfig
 
-from utils.feature_compress import quantize_feature_train
+from utils.feature_compress import quantize_feature_train,quantize_feature_validation
 from loss.loss import FeatureCompressLoss,DynamicWeightedLoss
 
 
@@ -51,6 +51,7 @@ class MMINModel(BaseModel):
         self.model_names = ['A', 'V', 'L', 'C', 'AE', 'AE_cycle']
         self.feat_compress_size=list(map(lambda x: int(x), opt.feat_compress_size.split(',')))
         self.feat_compress_flag=opt.feat_compress
+        self.train_flag=None
         
         # acoustic model
         self.netA = LSTMEncoder(opt.input_dim_a, opt.embd_size, embd_method=opt.embd_method_a)
@@ -159,8 +160,13 @@ class MMINModel(BaseModel):
         self.feat_V_miss = self.netV(self.V_miss)
         # fusion miss
         self.feat_fusion_miss = torch.cat([self.feat_A_miss, self.feat_L_miss, self.feat_V_miss], dim=-1)
-        # 模拟量化误差
-        self.feat_fusion_miss=quantize_feature_train(self.feat_fusion_miss)
+            # 模拟量化误差
+        if self.feat_compress_flag:
+            if self.train_flag:
+                self.feat_fusion_miss=quantize_feature_train(self.feat_fusion_miss)
+            else:
+                self.feat_fusion_miss,_,_,_=quantize_feature_validation(self.feat_A_miss)
+
         # calc reconstruction of teacher's output
         self.recon_fusion, self.latent = self.netAE(self.feat_fusion_miss)
         self.recon_cycle, self.latent_cycle = self.netAE_cycle(self.recon_fusion)
@@ -184,9 +190,9 @@ class MMINModel(BaseModel):
         self.loss_CE =  self.criterion_ce(self.logits, self.label)
         self.loss_mse = self.criterion_mse(self.T_embds, self.recon_fusion)
         self.loss_cycle =  self.criterion_mse(self.feat_fusion_miss.detach(), self.recon_cycle)
-        length,height=self.feat_compress_size[0],self.feat_compress_size[1]
         losses_list=[('cla',self.loss_CE),('reg',self.loss_mse),
             ('reg',self.loss_cycle)]
+        length,height=self.feat_compress_size[0],self.feat_compress_size[1]
         self.feat_compress=torch.stack((self.feat_A_miss.reshape(-1,length,height),
             self.feat_V_miss.reshape(-1,length,height),
             self.feat_L_miss.reshape(-1,length,height)),
@@ -202,6 +208,7 @@ class MMINModel(BaseModel):
             torch.nn.utils.clip_grad_norm_(getattr(self, 'net'+model).parameters(), 1.0)
             
     def optimize_parameters(self, epoch):
+        self.train_flag=True
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
         self.forward()   

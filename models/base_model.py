@@ -121,6 +121,7 @@ class BaseModel(ABC):
         It also calls <compute_visuals> to produce additional visualization results
         """
         with torch.no_grad():
+            self.train_flag=False
             self.forward()
 
     def compute_visuals(self):
