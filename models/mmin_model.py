@@ -165,7 +165,7 @@ class MMINModel(BaseModel):
             if self.train_flag:
                 self.feat_fusion_miss=quantize_feature_train(self.feat_fusion_miss)
             else:
-                self.feat_fusion_miss,_,_,_=quantize_feature_validation(self.feat_A_miss)
+                self.feat_fusion_miss,_,_,_=quantize_feature_validation(self.feat_fusion_miss)
 
         # calc reconstruction of teacher's output
         self.recon_fusion, self.latent = self.netAE(self.feat_fusion_miss)
