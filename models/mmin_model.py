@@ -103,7 +103,7 @@ class MMINModel(BaseModel):
         pretrained_config.gpu_ids = opt.gpu_ids                       # set gpu to the same
         self.pretrained_encoder = UttFusionModel(pretrained_config)
         self.pretrained_encoder.load_networks_cv(pretrained_path)
-        self.pretrained_encoder.cuda()
+        # self.pretrained_encoder.cuda()
         self.pretrained_encoder.eval()
     
     def post_process(self):
@@ -113,9 +113,9 @@ class MMINModel(BaseModel):
         if self.isTrain:
             print('[ Init ] Load parameters from pretrained encoder network')
             f = lambda x: transform_key_for_parallel(x)
-            self.netA.load_state_dict(f(self.pretrained_encoder.netA.state_dict()))
-            self.netV.load_state_dict(f(self.pretrained_encoder.netV.state_dict()))
-            self.netL.load_state_dict(f(self.pretrained_encoder.netL.state_dict()))
+            # self.netA.load_state_dict(f(self.pretrained_encoder.netA.state_dict()))
+            # self.netV.load_state_dict(f(self.pretrained_encoder.netV.state_dict()))
+            # self.netL.load_state_dict(f(self.pretrained_encoder.netL.state_dict()))
         
     def load_from_opt_record(self, file_path):
         opt_content = json.load(open(file_path, 'r'))

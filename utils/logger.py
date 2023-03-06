@@ -1,7 +1,7 @@
 import time
 import os
 import logging
-import fcntl
+# import fcntl
 
 def get_logger(path, suffix):
     cur_time = time.strftime('%Y-%m-%d-%H.%M.%S',time.localtime(time.time()))
@@ -49,7 +49,7 @@ class ResultRecorder(object):
     def write_result_to_tsv(self, results, cvNo):
         # 使用fcntl对文件加锁,避免多个不同进程同时操作同一个文件
         f_in = open(self.path)
-        fcntl.flock(f_in.fileno(), fcntl.LOCK_EX) # 加锁
+        # fcntl.flock(f_in.fileno(), fcntl.LOCK_EX) # 加锁
         content = f_in.readlines()
         if len(content) < self.total_cv+1:
             content += ['\n'] * (self.total_cv-len(content)+1)

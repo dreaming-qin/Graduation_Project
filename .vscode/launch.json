@@ -71,7 +71,7 @@
                 "--input_dim_l","1024",
 
                 // windows下需要添加的
-                // "--gpu_ids","-1"
+                "--gpu_ids","-1"
             ]
         }
     ]
