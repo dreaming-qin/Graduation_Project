@@ -48,7 +48,7 @@ class FeatureCompressLoss(nn.Module):
         Z=0.5*(fx+fy)
         T=torch.matmul(self.Mc,Z)
         T=torch.matmul(T,self.Mr.T)
-        return torch.abs(T.sum())/(f_channel*f_height*f_width)
+        return torch.abs(T).sum()/(f_channel*f_height*f_width)
 
 
 class DynamicWeightedLoss(nn.Module):

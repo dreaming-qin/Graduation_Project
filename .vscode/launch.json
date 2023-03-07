@@ -25,6 +25,7 @@
                 "--verbose",
                 "--in_mem", 
                 "--feat_compress", 
+                "--save_compress_pic",
                 
                 //路径相关
                 "--log_dir","./logs",
@@ -55,7 +56,7 @@
                 "--weight_decay","1e-5",
                 "--embd_size","128",
                 "--feat_compress_size","16,8",
-                "--quality","0",
+                "--quality","0,95,90,85,80",
 
 
                 "--A_type","comparE",

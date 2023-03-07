@@ -134,9 +134,10 @@ if __name__ == '__main__':
             model.save_networks('latest')
             model.save_networks(epoch)
             if opt.save_compress_pic:
-                save_compressed_feat(model.feat_compress,
-                    os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat'),
-                    epoch,opt.quality)
+                for p in opt.quality:
+                    save_compressed_feat(model.feat_compress,
+                        os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(p)),
+                        epoch,quality=p)
 
             # save compressed picture
             

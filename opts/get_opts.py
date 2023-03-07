@@ -63,7 +63,7 @@ class Options():
         # 特征压缩参数
         parser.add_argument('--feat_compress', action='store_true', help='if true, feature compress loss is applied')
         parser.add_argument('--feat_compress_size', default='16,8', type=str, help='reshaped compressed feature')
-        parser.add_argument('--quality', default=0, type=int, help='reshaped compressed feature')
+        parser.add_argument('--quality', default='0', type=str, help='reshaped compressed feature')
         parser.add_argument('--save_compress_pic', action='store_true', help='save compressed feature to picture')
 
         # expr setting 
@@ -154,7 +154,7 @@ class Options():
             if opt.feat_compress:
                 opt.name=opt.name+'_feat'
             print("Expr Name:", opt.name)
-        
+        opt.quality=[int(p) for p in opt.quality.split(',')]
         self.print_options(opt)
 
         # set gpu ids
