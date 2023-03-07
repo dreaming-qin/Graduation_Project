@@ -2,7 +2,7 @@ import os
 
 
 def auto_train_CAP(exp_No,gpu,compress_flag):
-    utt_fusion_train=True
+    utt_fusion_train=False
     mmin_train=True
     cv_iter=range(1,11)
     args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':128,
@@ -54,4 +54,4 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
             os.system(cmd)
 
 if __name__ =='__main__':
-    auto_train_CAP(exp_No=0,gpu=0,compress_flag=False)
+    auto_train_CAP(exp_No=0,gpu=0,compress_flag=True)

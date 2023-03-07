@@ -57,18 +57,16 @@ class DynamicWeightedLoss(nn.Module):
         for Scene Geometry and Semantics
     参考网址: https://blog.csdn.net/u010212101/article/details/115701136
     '''
-    def __init__(self):
+    def __init__(self,num):
         super(DynamicWeightedLoss, self).__init__()
+        params = torch.zeros(num, requires_grad=True)
+        self.params = torch.nn.Parameter(params)
 
     def forward(self, x_list):
         r'''x_list中元素形式如下: (name, loss)
             name类型为str, 用来判断是回归还是分类, 为reg是回归, 为cla是分类
             loss类型为tensor, 形状为(1,), 是已经计算好的单个任务的Loss值
         '''
-        if self.params is None:
-            num=len(x_list)
-            params = torch.zeros(num, requires_grad=True)
-            self.params = torch.nn.Parameter(params)
 
         loss_sum = 0
         for i, (name,loss) in enumerate(x_list):
