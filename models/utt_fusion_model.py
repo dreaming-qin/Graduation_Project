@@ -114,6 +114,11 @@ class UttFusionModel(BaseModel):
 
         # get model outputs
         self.feat = torch.cat(final_embd, dim=-1)
+        length,height=self.feat_compress_size[0],self.feat_compress_size[1]
+        self.feat_compress=torch.stack((self.feat_A.reshape(-1,length,height),
+            self.feat_V.reshape(-1,length,height),
+            self.feat_L.reshape(-1,length,height)),
+            dim=1)
         # 模拟量化误差
         if self.isTrain:
             self.feat=quantize_feature_train(self.feat)
@@ -126,11 +131,6 @@ class UttFusionModel(BaseModel):
         """Calculate the loss for back propagation"""
         self.loss_CE = self.criterion_ce(self.logits, self.label)
         losses_list=[('cla',self.loss_CE)]
-        length,height=self.feat_compress_size[0],self.feat_compress_size[1]
-        self.feat_compress=torch.stack((self.feat_A.reshape(-1,length,height),
-            self.feat_V.reshape(-1,length,height),
-            self.feat_L.reshape(-1,length,height)),
-            dim=1)
         # self.feat_compress=torch.tensor(self.final_embd)
         if self.feat_compress_flag:
             self.loss_feat_compress=self.criterion_feat_compress(self.feat_compress)

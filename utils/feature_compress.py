@@ -107,13 +107,13 @@ def quantize_feature_train(center_feature, n_bits=8):
     return center_recon
 
 
-def save_compressed_feat(feat_compress,save_path,epoch,quality):
+def save_compressed_feat(feat_compress,save_path,filename,quality):
         _,features_val_255, max_to_encode, min_to_encode = \
             quantize_feature_validation(feat_compress)
         features_val_255_numpy = features_val_255.data.cpu().numpy()
         _, _, f_height, f_width = features_val_255.shape
         features_val_255_numpy=features_val_255_numpy.reshape((-1,f_height,f_width))
-        file_name= os.path.join(save_path,'epoch{}'.format(epoch))
+        file_name= os.path.join(save_path,filename)
         _ = dump_feature_2D (features_val_255_numpy,file_name,
             max_to_encode, min_to_encode,quality)
 

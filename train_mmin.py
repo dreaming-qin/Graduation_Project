@@ -1,6 +1,8 @@
 import os
 import time
 import numpy as np
+import uuid
+
 from opts.get_opts import Options
 from data import create_dataset, create_dataset_with_args
 from models import create_model
@@ -26,6 +28,11 @@ def eval(model, val_iter, is_save=False, phase='test'):
         total_pred.append(pred)
         total_label.append(label)
         total_miss_type.append(miss_type)
+        if opt.save_compress_pic:
+            for p in opt.quality:
+                save_compressed_feat(model.feat_compress,
+                    os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(p)),
+                    str(uuid.uuid1()),quality=p)
 
     # calculate metrics
     total_pred = np.concatenate(total_pred)
@@ -133,11 +140,6 @@ if __name__ == '__main__':
             logger.info('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')
             model.save_networks(epoch)
-            if opt.save_compress_pic:
-                for p in opt.quality:
-                    save_compressed_feat(model.feat_compress,
-                        os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(p)),
-                        epoch,quality=p)
 
             # save compressed picture
             

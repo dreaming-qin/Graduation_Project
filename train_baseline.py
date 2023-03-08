@@ -1,12 +1,15 @@
 import os
 import time
 import numpy as np
+import uuid
+
 from opts.get_opts import Options
 from data import create_dataset_with_args
 from models import create_model
 from utils.logger import get_logger, ResultRecorder
 from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
 from utils.feature_compress import save_compressed_feat
+
 
 def make_path(path):
     if not os.path.exists(path):
@@ -16,7 +19,6 @@ def eval(model, val_iter, is_save=False, phase='test'):
     model.eval()
     total_pred = []
     total_label = []
-    
     for i, data in enumerate(val_iter):  # inner loop within one epoch
         model.set_input(data)         # unpack data from dataset and apply preprocessing
         model.test()
@@ -24,6 +26,11 @@ def eval(model, val_iter, is_save=False, phase='test'):
         label = data['label']
         total_pred.append(pred)
         total_label.append(label)
+        if opt.save_compress_pic:
+            for p in opt.quality:
+                save_compressed_feat(model.feat_compress,
+                    os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(p)),
+                    str(uuid.uuid1()),quality=p)
     
     # calculate metrics
     total_pred = np.concatenate(total_pred)
@@ -94,11 +101,6 @@ if __name__ == '__main__':
             logger.info('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')
             model.save_networks(epoch)
-            if opt.save_compress_pic:
-                for p in opt.quality:
-                    save_compressed_feat(model.feat_compress,
-                        os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(p)),
-                        epoch,quality=p)
 
         logger.info('End of training epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate(logger)                     # update learning rates at the end of every epoch.

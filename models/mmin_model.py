@@ -157,6 +157,11 @@ class MMINModel(BaseModel):
         self.feat_A_miss = self.netA(self.A_miss)
         self.feat_L_miss = self.netL(self.L_miss)
         self.feat_V_miss = self.netV(self.V_miss)
+        length,height=self.feat_compress_size[0],self.feat_compress_size[1]
+        self.feat_compress=torch.stack((self.feat_A_miss.reshape(-1,length,height),
+            self.feat_V_miss.reshape(-1,length,height),
+            self.feat_L_miss.reshape(-1,length,height)),
+            dim=1)
         # fusion miss
         self.feat_fusion_miss = torch.cat([self.feat_A_miss, self.feat_L_miss, self.feat_V_miss], dim=-1)
         # 模拟量化误差
@@ -190,11 +195,6 @@ class MMINModel(BaseModel):
         self.loss_cycle =  self.criterion_mse(self.feat_fusion_miss.detach(), self.recon_cycle)
         losses_list=[('cla',self.loss_CE),('reg',self.loss_mse),
             ('reg',self.loss_cycle)]
-        length,height=self.feat_compress_size[0],self.feat_compress_size[1]
-        self.feat_compress=torch.stack((self.feat_A_miss.reshape(-1,length,height),
-            self.feat_V_miss.reshape(-1,length,height),
-            self.feat_L_miss.reshape(-1,length,height)),
-            dim=1)
         if self.feat_compress_flag:
             self.loss_feat_compress=self.criterion_feat_compress(self.feat_compress)
             losses_list.append(('reg',self.loss_feat_compress))
