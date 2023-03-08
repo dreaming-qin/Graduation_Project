@@ -3,8 +3,8 @@
 'AE'是auto encoder，指的是提出的Imagination Module
 'AE_cycle'指的是Imagination Module用来Cycle Consistency Learning的另一个Imagination Module
 
-转为linux需要注意的：aa
+转为linux需要注意的：
 1.在launch.json中删掉最下面的参数
 2.在utils.logger.py 中的52行取消掉注释
-3.models\mmin_model.py中106行删除注释
-4.models\mmin_model.py中116-118行删除注释
+3.models\mmin_model.py中105行删除注释
+4.models\mmin_model.py中115-117行删除注释

@@ -12,52 +12,45 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             
-            // 使用IEMOCAP、训练mmin使用的参数，使用vscode调试时需要放到launch.json中
+            // 使用IEMOCAP、训练baseline使用的参数，使用vscode调试时需要放到launch.json中
             "args": [
-                //其它
-                "--dataset_mode","multimodal_miss",
-                "--model","mmin",
-                "--corpus","IEMOCAP",
-                "--name","mmin_IEMOCAP",
-                // --suffix=block_{n_blocks}_run{run_idx}
-                "--suffix","block_{n_blocks}_run{run_idx}", 
+                // 其它 
                 "--has_test",
-                "--verbose",
-                "--in_mem", 
+                "--dataset_mode","multimodal",
+                "--model","utt_fusion",
+                //--gpu_ids=$gpu 
+                "--corpus_name","IEMOCAP",
+                // --modality=$modality 
+                "--modality","AVL",
                 "--feat_compress", 
                 "--save_compress_pic",
-                
-                //路径相关
+
+                // 路径相关
                 "--log_dir","./logs",
                 "--checkpoints_dir","./checkpoints",
-                "--pretrained_path","./checkpoints/CAP_utt_fusion_AVL_run0",
-
-                //数字相关的参数
+                "--name","CAP_utt_fusion",
+                // --suffix={modality}_run{run_idx} 
+                "--suffix","{modality}_run{run_idx}",
                 // --cvNo=$i
-                "--cvNo","1",
-                "--print_freq","10",
-                //--run_idx=$run_idx
-                "--run_idx","0",
-                //--gpu_ids=$gpu 
-                "--gpu_ids","0",
+
+                // 数字
                 "--output_dim","4", 
                 "--cls_layers","128,128",
-                "--AE_layers","256,128,64",
-                "--n_blocks","5",
-                "--num_thread","0",
-                "--dropout_rate","0.5",
-                "--niter","30", 
-                "--niter_decay","30",
-                "--batch_size","130", 
+                "--dropout_rate","0.3",
+                "--niter","10", 
+                "--niter_decay","10", 
+                "--in_mem", 
+                "--beta1","0.9",
+                "--batch_size","128", 
                 "--lr","2e-4",
-                "--ce_weight","1.0",
-                "--mse_weight","4.0",
-                "--cycle_weight","2.0",
-                "--weight_decay","1e-5",
-                "--embd_size","128",
+                //--run_idx=$run_idx
+                "--run_idx","0",
+                "--print_freq","10",
+                "--gpu_ids","0",
+                "--cvNo","1",
+                "--embd_size","128", 
                 "--feat_compress_size","16,8",
                 "--quality","0,95,90,85,80",
-
 
                 "--A_type","comparE",
                 "--input_dim_a","130",
@@ -69,10 +62,12 @@
                 "--embd_method_v","maxpool",
 
                 "--L_type","bert_large", 
-                "--input_dim_l","1024",
+                "--input_dim_l","1024", 
 
+
+                
                 // windows下需要添加的
-                // "--gpu_ids","-1"
+                "--gpu_ids","-1"
             ]
         }
     ]
