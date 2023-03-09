@@ -96,7 +96,9 @@ if __name__ == '__main__':
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
                 logger.info('Cur epoch {}'.format(epoch) + ' loss ' + 
-                        ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
+                    ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
+                logger.info('dynamic weight is {}'.format(
+                    model.criterion_dynamic_weight.params.detach().cpu().numpy()))
 
             iter_data_time = time.time()
         if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs

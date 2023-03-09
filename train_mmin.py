@@ -19,7 +19,7 @@ def eval(model, val_iter, is_save=False, phase='test'):
     total_pred = []
     total_label = []
     total_miss_type = []
-    for _, data in enumerate(val_iter):  # inner loop within one epoch
+    for _, data in enumerate(val_iter):  # inner loop within one epochs
         model.set_input(data)            # unpack data from dataset and apply preprocessing
         model.test()
         pred = model.pred.argmax(dim=1).detach().cpu().numpy()
@@ -27,7 +27,7 @@ def eval(model, val_iter, is_save=False, phase='test'):
         miss_type = np.array(data['miss_type'])
         total_pred.append(pred)
         total_label.append(label)
-        total_miss_type.append(miss_type)
+        total_miss_type.append(miss_type) 
         if opt.save_compress_pic:
             global eval_cnt
             for p in opt.quality:
@@ -133,7 +133,9 @@ if __name__ == '__main__':
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
                 logger.info('Cur epoch {}'.format(epoch) + ' loss ' + 
-                        ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
+                    ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
+                logger.info('dynamic weight is {}'.format(
+                    model.criterion_dynamic_weight.params.detach().cpu().numpy()))
 
             iter_data_time = time.time()
 

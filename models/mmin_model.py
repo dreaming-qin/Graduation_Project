@@ -47,7 +47,7 @@ class MMINModel(BaseModel):
         """
         super().__init__(opt)
         # our expriment is on 10 fold setting, teacher is on 5 fold setting, the train set should match
-        self.loss_names = ['CE', 'mse', 'cycle']
+        self.loss_names = ['CE', 'mse', 'cycle','feat_compress']
         self.model_names = ['A', 'V', 'L', 'C', 'AE', 'AE_cycle']
         self.feat_compress_size=list(map(lambda x: int(x), opt.feat_compress_size.split(',')))
         self.feat_compress_flag=opt.feat_compress
