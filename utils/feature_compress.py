@@ -57,7 +57,7 @@ def dump_feature_2D(feature, filename, max_range, min_range,png_jpg_flag,n_bits=
     for i in range(0, feature_2D_height, f_height):
         for j in range(0, feature_2D_width, f_width):
             counter += 1
-            if counter>=feature_vector.shape[1]:
+            if counter>=feature_vector.shape[0]:
                 break
             feature_2D[i:i+f_height,j:j+f_width] = feature_vector[counter]
     # for i in range(0, feature_2D_height, f_height):
