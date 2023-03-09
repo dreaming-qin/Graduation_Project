@@ -4,6 +4,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+
+
+
+a=0
+a+=1
+print(a)
 np.random.seed(0)
 torch.manual_seed(0)
      

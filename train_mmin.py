@@ -1,7 +1,6 @@
 import os
 import time
 import numpy as np
-import uuid
 
 from opts.get_opts import Options
 from data import create_dataset, create_dataset_with_args
@@ -9,6 +8,8 @@ from models import create_model
 from utils.logger import get_logger, ResultRecorder
 from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
 from utils.feature_compress import save_compressed_feat
+
+eval_cnt=0
 
 def make_path(path):
     if not os.path.exists(path):
@@ -32,7 +33,8 @@ def eval(model, val_iter, is_save=False, phase='test'):
             for p in opt.quality:
                 save_compressed_feat(model.feat_compress,
                     os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(p)),
-                    str(uuid.uuid1()),quality=p)
+                    str(eval_cnt),quality=p)
+                eval_cnt+=1
 
     # calculate metrics
     total_pred = np.concatenate(total_pred)
