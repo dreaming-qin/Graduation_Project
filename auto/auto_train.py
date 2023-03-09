@@ -6,8 +6,8 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
     utt_fusion_train=True
     mmin_train=True
     cv_iter=range(1,11)
-    args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':128,
-        'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
+    args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':1024,
+        'feat_compress_size':'32,32','n_blocks':5,'quality':'0,95,90,85,80','niter':-9,
         'compress_flag':compress_flag,'save_compress_pic':True,
         'checkpoints_dir':'./checkpoints','log_dir':'./logs'}
     

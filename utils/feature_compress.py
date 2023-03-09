@@ -47,21 +47,27 @@ def dump_feature_2D(feature, filename, max_range, min_range,png_jpg_flag,n_bits=
 
     # f_height是高，f_width是宽
     fch, f_height, f_width = feature.shape
-    feature_vector = np.reshape(feature, (1, -1))
+    feature_vector = feature
     feature_2D_width = int((2 ** np.ceil(1 / 2 * (np.log2(fch)))) * f_width)
-    feature_2D_height = (((fch*f_width)//feature_2D_width)+1)*f_height
+    feature_2D_height = (int(((fch-0.1)*f_width)/feature_2D_width)+1)*f_height
     # feature_2D_height = int((2 ** np.floor(1 / 2 * (np.log2(fch)))) * f_height)
     counter = -1
     feature_2D = np.zeros((feature_2D_height, feature_2D_width))
     # 填充feture 2D
     for i in range(0, feature_2D_height, f_height):
         for j in range(0, feature_2D_width, f_width):
-            for k in range(i, i + f_height):
-                for l in range(j, j + f_width):
-                    counter += 1
-                    if counter>=feature_vector.shape[1]:
-                        break
-                    feature_2D[k][l] = feature_vector[0][counter]
+            counter += 1
+            if counter>=feature_vector.shape[1]:
+                break
+            feature_2D[i:i+f_height,j:j+f_width] = feature_vector[counter]
+    # for i in range(0, feature_2D_height, f_height):
+    #     for j in range(0, feature_2D_width, f_width):
+    #         for k in range(i, i + f_height):
+    #             for l in range(j, j + f_width):
+    #                 counter += 1
+    #                 if counter>=feature_vector.shape[1]:
+    #                     break
+    #                 feature_2D[k][l] = feature_vector[0][counter]
 
     if png_jpg_flag == 0:
         cv2.imwrite(filename_write, feature_2D)  #use different libraries for saving PNG/JPEG images
@@ -74,22 +80,22 @@ def dump_feature_2D(feature, filename, max_range, min_range,png_jpg_flag,n_bits=
     read_feature_2D = cv2.imread(filename_write,flags=cv2.IMREAD_GRAYSCALE)
     # print (str(os.path.getsize(filename_write)))  #THIS GIVES IN BYTES!!!!!
 
-    # change the image to tensor!
-    channel_counter = -1
-    # print (feature.shape)
-    read_3D_feature = np.zeros(feature.shape)
-    # print (read_3D_feature.shape)
-    for i in range(0, feature_2D_height, f_height):
-        for j in range(0, feature_2D_width, f_width):
-            channel_counter += 1
-            if channel_counter>=read_3D_feature.shape[0]:
-                break
-            for k in range(i, i + f_height):
-                for l in range(j, j + f_width):
-                    read_3D_feature[channel_counter][k - i][l - j] = read_feature_2D[k][l]
-    bit_range = 2 ** (n_bits) - 1
-    read_3D_feature = (read_3D_feature * (max_range - min_range) / bit_range) + min_range
-    return Variable(torch.Tensor(read_3D_feature))
+    # # change the image to tensor!
+    # channel_counter = -1
+    # # print (feature.shape)
+    # read_3D_feature = np.zeros(feature.shape)
+    # # print (read_3D_feature.shape)
+    # for i in range(0, feature_2D_height, f_height):
+    #     for j in range(0, feature_2D_width, f_width):
+    #         channel_counter += 1
+    #         if channel_counter>=read_3D_feature.shape[0]:
+    #             break
+    #         for k in range(i, i + f_height):
+    #             for l in range(j, j + f_width):
+    #                 read_3D_feature[channel_counter][k - i][l - j] = read_feature_2D[k][l]
+    # bit_range = 2 ** (n_bits) - 1
+    # read_3D_feature = (read_3D_feature * (max_range - min_range) / bit_range) + min_range
+    # return Variable(torch.Tensor(read_3D_feature))
 
 
 def quantize_feature_train(center_feature, n_bits=8):

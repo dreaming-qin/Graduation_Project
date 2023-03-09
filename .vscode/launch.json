@@ -48,8 +48,8 @@
                 "--print_freq","10",
                 "--gpu_ids","0",
                 "--cvNo","1",
-                "--embd_size","128", 
-                "--feat_compress_size","16,8",
+                "--embd_size","1024", 
+                "--feat_compress_size","32,32",
                 "--quality","0,95,90,85,80",
 
                 "--A_type","comparE",
@@ -67,7 +67,7 @@
 
                 
                 // windows下需要添加的
-                "--gpu_ids","-1"
+                // "--gpu_ids","-1"
             ]
         }
     ]
