@@ -59,7 +59,7 @@ class DynamicWeightedLoss(nn.Module):
     '''
     def __init__(self,num):
         super(DynamicWeightedLoss, self).__init__()
-        params = torch.zeros(num, requires_grad=True)
+        params = torch.ones(num, requires_grad=True)
         self.params = torch.nn.Parameter(params)
 
     def forward(self, x_list):
@@ -67,14 +67,13 @@ class DynamicWeightedLoss(nn.Module):
             name类型为str, 用来判断是回归还是分类, 为reg是回归, 为cla是分类
             loss类型为tensor, 形状为(1,), 是已经计算好的单个任务的Loss值
         '''
-
         loss_sum = 0
         for i, (name,loss) in enumerate(x_list):
             if name=='reg':
-                loss_sum += torch.exp(-self.params[i]) * loss+ self.params[i]
+                loss_sum += self.params[i]* loss-0.5*torch.log2(2*self.params[i]) 
             elif name=='cla':
-                loss_sum +=2*torch.exp(-self.params[i]) * loss + self.params[i]
+                loss_sum += self.params[i] * loss -0.5*torch.log2(self.params[i]) 
             else:
                 warnings.warn('warning: name is not either cla or cla')
-                loss_sum += torch.exp(-self.params[i]) * loss+ self.params[i]
+                loss_sum += self.params[i]* loss-0.5*torch.log2(2*self.params[i]) 
         return loss_sum

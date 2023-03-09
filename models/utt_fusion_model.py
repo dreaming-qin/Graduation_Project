@@ -40,7 +40,9 @@ class UttFusionModel(BaseModel):
         self.feat_compress_flag=opt.feat_compress
 
         # our expriment is on 10 fold setting, teacher is on 5 fold setting, the train set should match
-        self.loss_names = ['CE','feat_compress']
+        self.loss_names = ['CE']
+        if self.feat_compress_flag:
+            self.loss_names.append('feat_compress')
         self.modality = opt.modality
         self.model_names = ['C']
         cls_layers = list(map(lambda x: int(x), opt.cls_layers.split(',')))

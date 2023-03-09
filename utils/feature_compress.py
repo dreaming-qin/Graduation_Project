@@ -72,7 +72,7 @@ def dump_feature_2D(feature, filename, max_range, min_range,png_jpg_flag,n_bits=
 
 
     read_feature_2D = cv2.imread(filename_write,flags=cv2.IMREAD_GRAYSCALE)
-    print (str(os.path.getsize(filename_write)))  #THIS GIVES IN BYTES!!!!!
+    # print (str(os.path.getsize(filename_write)))  #THIS GIVES IN BYTES!!!!!
 
     # change the image to tensor!
     channel_counter = -1

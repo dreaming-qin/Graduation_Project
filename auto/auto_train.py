@@ -60,4 +60,4 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
             os.system(cmd)
 
 if __name__ =='__main__':
-    auto_train_CAP(exp_No=0,gpu=1,compress_flag=False)
+    auto_train_CAP(exp_No=0,gpu=0,compress_flag=True)
