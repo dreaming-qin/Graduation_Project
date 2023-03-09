@@ -51,7 +51,7 @@ class MMINModel(BaseModel):
         self.feat_compress_size=list(map(lambda x: int(x), opt.feat_compress_size.split(',')))
         self.feat_compress_flag=opt.feat_compress
         self.loss_names = ['CE', 'mse', 'cycle']
-        if self.feat_compress:
+        if self.feat_compress_flag:
             self.loss_names.append('feat_compress')
         
         # acoustic model

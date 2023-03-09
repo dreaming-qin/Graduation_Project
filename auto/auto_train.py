@@ -1,4 +1,5 @@
 import os
+import shutil
 
 
 def auto_train_CAP(exp_No,gpu,compress_flag):
@@ -7,11 +8,17 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
     cv_iter=range(1,11)
     args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':128,
         'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
-        'compress_flag':compress_flag,'save_compress_pic':True}
+        'compress_flag':compress_flag,'save_compress_pic':True,
+        'checkpoints_dir':'./checkpoints','log_dir':'./logs'}
+    
+    # if os.path.exists(args_dict['checkpoints_dir']):
+    #     shutil.rmtree(args_dict['checkpoints_dir'])
+    # if os.path.exists(args_dict['log_dir']):
+    #     shutil.rmtree(args_dict['log_dir'])
     # 命令行格式
     utt_fusion_cmd=('python train_baseline.py --dataset_mode=multimodal --model=utt_fusion'
         ' --gpu_ids={0[gpu_ids]} --modality=AVL --corpus_name=IEMOCAP'
-        ' --log_dir=./logs --checkpoints_dir=./checkpoints --print_freq=10' 
+        ' --log_dir={0[log_dir]} --checkpoints_dir={0[checkpoints_dir]} --print_freq=10' 
         ' --A_type=comparE --input_dim_a=130 --norm_method=trn --embd_size={0[embd_size]}'
         ' --embd_method_a=maxpool --V_type=denseface --input_dim_v=342 --embd_method_v=maxpool'
         ' --L_type=bert_large --input_dim_l=1024'
@@ -23,7 +30,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         ' --quality={0[quality]}')
     
     mmin_cmd=('python train_mmin.py --dataset_mode=multimodal_miss --model=mmin'
-        ' --log_dir=./logs --checkpoints_dir=./checkpoints --gpu_ids={0[gpu_ids]}'
+        ' --log_dir={0[log_dir]} --checkpoints_dir={0[checkpoints_dir]} --gpu_ids={0[gpu_ids]}'
         ' --A_type=comparE --input_dim_a=130 --norm_method=trn --embd_method_a=maxpool'
         ' --V_type=denseface --input_dim_v=342  --embd_method_v=maxpool'
         ' --L_type=bert_large --input_dim_l=1024'
@@ -60,4 +67,4 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
             os.system(cmd)
 
 if __name__ =='__main__':
-    auto_train_CAP(exp_No=0,gpu=0,compress_flag=True)
+    auto_train_CAP(exp_No=0,gpu=1,compress_flag=False)
