@@ -14,7 +14,6 @@ def make_path(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-eval_cnt=0
 def eval(model, val_iter, is_save=False, phase='test'):
     model.eval()
     total_pred = []
@@ -27,11 +26,12 @@ def eval(model, val_iter, is_save=False, phase='test'):
         total_pred.append(pred)
         total_label.append(label)
         if opt.save_compress_pic:
+            global eval_cnt
             for p in opt.quality:
                 save_compressed_feat(model.feat_compress,
                     os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(p)),
                     str(eval_cnt),quality=p)
-                eval_cnt+=1
+            eval_cnt+=1
     
     # calculate metrics
     total_pred = np.concatenate(total_pred)
@@ -57,6 +57,7 @@ def clean_chekpoints(expr_name, store_epoch):
             os.remove(os.path.join(root, checkpoint))
 
 if __name__ == '__main__':
+    eval_cnt=0
     opt = Options().parse()                             # get training options
     logger_path = os.path.join(opt.log_dir, opt.name, str(opt.cvNo)) # get logger path
     if not os.path.exists(logger_path):                 # make sure logger path exists

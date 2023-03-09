@@ -2,7 +2,7 @@ import os
 
 
 def auto_train_CAP(exp_No,gpu,compress_flag):
-    utt_fusion_train=False
+    utt_fusion_train=True
     mmin_train=True
     cv_iter=range(1,11)
     args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':128,
@@ -13,7 +13,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         ' --gpu_ids={0[gpu_ids]} --modality=AVL --corpus_name=IEMOCAP'
         ' --log_dir=./logs --checkpoints_dir=./checkpoints --print_freq=10' 
         ' --A_type=comparE --input_dim_a=130 --norm_method=trn --embd_size={0[embd_size]}'
-        '--embd_method_a=maxpool --V_type=denseface --input_dim_v=342 --embd_method_v=maxpool'
+        ' --embd_method_a=maxpool --V_type=denseface --input_dim_v=342 --embd_method_v=maxpool'
         ' --L_type=bert_large --input_dim_l=1024'
         ' --output_dim=4 --cls_layers=128,128 --dropout_rate=0.3'
         ' --niter={0[niter]} --niter_decay=10 --in_mem --beta1=0.9'
