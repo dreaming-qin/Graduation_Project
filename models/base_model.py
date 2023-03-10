@@ -40,6 +40,7 @@ class BaseModel(ABC):
         self.model_names = []
         self.optimizers = []
         self.metric = 0  # used for learning rate policy 'plateau'
+        self.quality=None
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -114,11 +115,12 @@ class BaseModel(ABC):
                 net = getattr(self, 'net' + name)
                 net.train()
 
-    def test(self):
+    def test(self,quality=None):
         """Forward function used in test time.
         This function wraps <forward> function in no_grad() so we don't save intermediate steps for backprop
         It also calls <compute_visuals> to produce additional visualization results
         """
+        self.quality=quality
         self.isTrain = False
         with torch.no_grad():
             self.forward()

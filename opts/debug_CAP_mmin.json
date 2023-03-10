@@ -15,7 +15,7 @@
         //路径相关
         "--log_dir","./logs",
         "--checkpoints_dir","./checkpoints",
-        "--pretrained_path","./checkpoints/CAP_utt_fusion_AVL_run0",
+        "--pretrained_path","./checkpoints/CAP_utt_fusion_AVL_run0_feat",
         "--name","mmin_IEMOCAP",
         // --suffix=block_{n_blocks}_run{run_idx}
         "--suffix","block_{n_blocks}_run{run_idx}", 

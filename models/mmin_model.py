@@ -4,6 +4,8 @@ import os
 import json
 from collections import OrderedDict
 import torch.nn.functional as F
+import uuid
+import shutil
 from models.base_model import BaseModel
 from models.networks.fc import FcEncoder
 from models.networks.lstm import LSTMEncoder
@@ -13,7 +15,7 @@ from models.networks.autoencoder import ResidualAE
 from models.utt_fusion_model import UttFusionModel
 from .utils.config import OptConfig
 
-from utils.feature_compress import quantize_feature_train,quantize_feature_validation
+from utils.feature_compress import quantize_feature_train,get_tensor_feature_from_pic,quantize_feature_validation,dump_feature2D
 from loss.loss import FeatureCompressLoss,DynamicWeightedLoss
 
 
@@ -157,20 +159,19 @@ class MMINModel(BaseModel):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         # get utt level representattion
         self.feat_A_miss = self.netA(self.A_miss)
-        self.feat_L_miss = self.netL(self.L_miss)
         self.feat_V_miss = self.netV(self.V_miss)
-        length,height=self.feat_compress_size[0],self.feat_compress_size[1]
-        self.feat_compress=torch.stack((self.feat_A_miss.reshape(-1,length,height),
-            self.feat_V_miss.reshape(-1,length,height),
-            self.feat_L_miss.reshape(-1,length,height)),
-            dim=1)
+        self.feat_L_miss = self.netL(self.L_miss)
         # fusion miss
-        self.feat_fusion_miss = torch.cat([self.feat_A_miss, self.feat_L_miss, self.feat_V_miss], dim=-1)
+        self.feat_fusion_miss = torch.cat([self.feat_A_miss, self.feat_V_miss, self.feat_L_miss], dim=-1)
+        length,height=self.feat_compress_size[0],self.feat_compress_size[1]
+        self.feat_compress=self.feat_fusion_miss.reshape(-1,3,length,height)
         # 模拟量化误差
         if self.isTrain:
             self.feat_fusion_miss=quantize_feature_train(self.feat_fusion_miss)
         else:
-            self.feat_fusion_miss,_,_,_=quantize_feature_validation(self.feat_fusion_miss)
+            feature3D=get_tensor_feature_from_pic(self.feat_compress,self.quality)
+            _,h,w=feature3D.shape
+            self.feat_fusion_miss=feature3D.reshape((-1,3*h*w))
 
         # calc reconstruction of teacher's output
         self.recon_fusion, self.latent = self.netAE(self.feat_fusion_miss)

@@ -1,16 +1,15 @@
 
 import torch
 import os
-import json
 import torch.nn.functional as F
 from models.base_model import BaseModel
-from models.networks.fc import FcEncoder
 from models.networks.lstm import LSTMEncoder
 from models.networks.textcnn import TextCNN
 from models.networks.classifier import FcClassifier
-import sys
+import uuid
+import shutil
 
-from utils.feature_compress import quantize_feature_train,quantize_feature_validation
+from utils.feature_compress import quantize_feature_train,get_tensor_feature_from_pic,quantize_feature_validation,dump_feature2D
 from loss.loss import FeatureCompressLoss,DynamicWeightedLoss
 
 class UttFusionModel(BaseModel):
@@ -105,27 +104,27 @@ class UttFusionModel(BaseModel):
             self.feat_A = self.netA(self.acoustic)
             final_embd.append(self.feat_A)
 
+        if 'V' in self.modality:
+            self.feat_V = self.netV(self.visual)
+            final_embd.append(self.feat_V)
+
         if 'L' in self.modality:
             self.feat_L = self.netL(self.lexical)
             final_embd.append(self.feat_L)
         
-        if 'V' in self.modality:
-            self.feat_V = self.netV(self.visual)
-            final_embd.append(self.feat_V)
-        self.final_embd=final_embd
 
         # get model outputs
         self.feat = torch.cat(final_embd, dim=-1)
         length,height=self.feat_compress_size[0],self.feat_compress_size[1]
-        self.feat_compress=torch.stack((self.feat_A.reshape(-1,length,height),
-            self.feat_V.reshape(-1,length,height),
-            self.feat_L.reshape(-1,length,height)),
-            dim=1)
+        self.feat_compress=self.feat.reshape(-1,3,length,height)
         # 模拟量化误差
         if self.isTrain:
             self.feat=quantize_feature_train(self.feat)
         else:
-            self.feat,_,_,_=quantize_feature_validation(self.feat)
+            feature3D=get_tensor_feature_from_pic(self.feat_compress,self.quality)
+            _,h,w=feature3D.shape
+            self.feat=feature3D.reshape((-1,3*h*w))
+
         self.logits, self.ef_fusion_feat = self.netC(self.feat)
         self.pred = F.softmax(self.logits, dim=-1)
         

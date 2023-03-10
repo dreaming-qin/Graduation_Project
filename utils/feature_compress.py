@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 from torch.autograd import Variable
 from PIL import Image
+import uuid
 
 def quantize_feature_validation(center_feature, n_bits=8):  # I consider numbers to be 255
     r'''input:
@@ -31,8 +32,7 @@ def quantize_feature_validation(center_feature, n_bits=8):  # I consider numbers
     center_recon = orig_before_add_min + min_center_value.expand_as(orig_before_add_min)
     return center_recon, quantized_value_255, max_value_return, min_value_return
 
-
-def dump_feature_2D(feature, filename, max_range, min_range,png_jpg_flag,n_bits=8):
+def dump_feature2D(quantize_feature, filename,png_jpg_flag):
     r'''
     input:
         feature:np.ndarray, 形状是[channel, wight, height], 已经量化好的特征
@@ -46,8 +46,8 @@ def dump_feature_2D(feature, filename, max_range, min_range,png_jpg_flag,n_bits=
         os.makedirs(os.path.dirname(filename_write))
 
     # f_height是高，f_width是宽
-    fch, f_height, f_width = feature.shape
-    feature_vector = feature
+    fch, f_height, f_width = quantize_feature.shape
+    feature_vector = quantize_feature
     feature_2D_width = int((2 ** np.ceil(1 / 2 * (np.log2(fch)))) * f_width)
     feature_2D_height = (int(((fch-0.1)*f_width)/feature_2D_width)+1)*f_height
     # feature_2D_height = int((2 ** np.floor(1 / 2 * (np.log2(fch)))) * f_height)
@@ -60,14 +60,6 @@ def dump_feature_2D(feature, filename, max_range, min_range,png_jpg_flag,n_bits=
             if counter>=feature_vector.shape[0]:
                 break
             feature_2D[i:i+f_height,j:j+f_width] = feature_vector[counter]
-    # for i in range(0, feature_2D_height, f_height):
-    #     for j in range(0, feature_2D_width, f_width):
-    #         for k in range(i, i + f_height):
-    #             for l in range(j, j + f_width):
-    #                 counter += 1
-    #                 if counter>=feature_vector.shape[1]:
-    #                     break
-    #                 feature_2D[k][l] = feature_vector[0][counter]
 
     if png_jpg_flag == 0:
         cv2.imwrite(filename_write, feature_2D)  #use different libraries for saving PNG/JPEG images
@@ -75,32 +67,43 @@ def dump_feature_2D(feature, filename, max_range, min_range,png_jpg_flag,n_bits=
         obj = Image.fromarray(feature_2D)
         obj = obj.convert("L")
         obj.save(filename_write, format='JPEG', quality=png_jpg_flag)
+    
+def get_tensor_feature_from_pic(feat_compress,quality,n_bits=8):
+    def image_to_tensor(file, max_range, min_range,feature_shape,n_bits):
+        read_feature_2D = cv2.imread(file,flags=cv2.IMREAD_GRAYSCALE)
+        # print (str(os.path.getsize(filename_write)))  #THIS GIVES IN BYTES!!!!!
 
+        # change the image to tensor!
+        channel_counter = -1
+        feature_2D_height,feature_2D_width=read_feature_2D.shape
+        _,f_height,f_width=feature_shape
+        read_3D_feature = np.zeros(feature_shape)
+        # print (read_3D_feature.shape)
+        for i in range(0, feature_2D_height, f_height):
+            for j in range(0, feature_2D_width, f_width):
+                channel_counter += 1
+                if channel_counter>=read_3D_feature.shape[0]:
+                    break
+                read_3D_feature[channel_counter] = read_feature_2D[i:i+f_height,j:j+f_width]
+        bit_range = 2 ** (n_bits) - 1
+        read_3D_feature = (read_3D_feature * (max_range - min_range) / bit_range) + min_range
+        return Variable(torch.Tensor(read_3D_feature))
 
-    read_feature_2D = cv2.imread(filename_write,flags=cv2.IMREAD_GRAYSCALE)
-    # print (str(os.path.getsize(filename_write)))  #THIS GIVES IN BYTES!!!!!
+    filename=str(uuid.uuid1())
+    save_path='./'
+    _,features_val_255, max_val, min_val = quantize_feature_validation(feat_compress)
+    features_val_255_numpy = features_val_255.data.cpu().numpy()
+    features_val_255_numpy=features_val_255_numpy.reshape((-1,features_val_255.shape[2],
+        features_val_255.shape[3]))
+    dump_feature2D (features_val_255_numpy,os.path.join(save_path,filename),quality)
+    filename=os.path.join(save_path,'{}.{}'.format(filename,'png' if quality==0
+        else 'jpg'))
+    feature3D=image_to_tensor(filename,max_val,min_val,features_val_255_numpy.shape,n_bits)
+    os.remove(filename)
+    return feature3D
 
-    # # change the image to tensor!
-    # channel_counter = -1
-    # # print (feature.shape)
-    # read_3D_feature = np.zeros(feature.shape)
-    # # print (read_3D_feature.shape)
-    # for i in range(0, feature_2D_height, f_height):
-    #     for j in range(0, feature_2D_width, f_width):
-    #         channel_counter += 1
-    #         if channel_counter>=read_3D_feature.shape[0]:
-    #             break
-    #         for k in range(i, i + f_height):
-    #             for l in range(j, j + f_width):
-    #                 read_3D_feature[channel_counter][k - i][l - j] = read_feature_2D[k][l]
-    # bit_range = 2 ** (n_bits) - 1
-    # read_3D_feature = (read_3D_feature * (max_range - min_range) / bit_range) + min_range
-    # return Variable(torch.Tensor(read_3D_feature))
-
-
+    
 def quantize_feature_train(center_feature, n_bits=8):
-    # r1 = -0.5
-    # r2 = 0.5
     r1 = -0.002
     r2 = 0.002  # 2*0.002*256 = 1 it is the change in the 1/255 not 255 scale
     data_shape = center_feature.data.shape
@@ -112,16 +115,14 @@ def quantize_feature_train(center_feature, n_bits=8):
     center_recon = center_feature + quant_error
     return center_recon
 
-
 def save_compressed_feat(feat_compress,save_path,filename,quality):
-        _,features_val_255, max_to_encode, min_to_encode = \
-            quantize_feature_validation(feat_compress)
-        features_val_255_numpy = features_val_255.data.cpu().numpy()
-        _, _, f_height, f_width = features_val_255.shape
-        features_val_255_numpy=features_val_255_numpy.reshape((-1,f_height,f_width))
-        file_name= os.path.join(save_path,filename)
-        _ = dump_feature_2D (features_val_255_numpy,file_name,
-            max_to_encode, min_to_encode,quality)
+    _,features_val_255, _, _ = quantize_feature_validation(feat_compress)
+    features_val_255_numpy = features_val_255.data.cpu().numpy()
+    _, _, f_height, f_width = features_val_255.shape
+    features_val_255_numpy=features_val_255_numpy.reshape((-1,f_height,f_width))
+    file_name= os.path.join(save_path,filename)
+    dump_feature2D (features_val_255_numpy,file_name,quality)
+
 
 if __name__=='__main__':
     a=torch.randn((130,3,16,8))

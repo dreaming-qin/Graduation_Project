@@ -14,26 +14,25 @@ def make_path(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def eval(model, val_iter, is_save=False, phase='test'):
+def eval(model, val_iter,quality, is_save=False, phase='test',save_pic_flag=False):
     model.eval()
     total_pred = []
     total_label = []
     total_miss_type = []
     for _, data in enumerate(val_iter):  # inner loop within one epochs
         model.set_input(data)            # unpack data from dataset and apply preprocessing
-        model.test()
+        model.test(quality=quality)
         pred = model.pred.argmax(dim=1).detach().cpu().numpy()
         label = data['label']
         miss_type = np.array(data['miss_type'])
         total_pred.append(pred)
         total_label.append(label)
         total_miss_type.append(miss_type) 
-        if opt.save_compress_pic:
+        if opt.save_compress_pic and save_pic_flag:
             global eval_cnt
-            for p in opt.quality:
-                save_compressed_feat(model.feat_compress,
-                    os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(p)),
-                    str(eval_cnt),quality=p)
+            save_compressed_feat(model.feat_compress,
+                os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(quality)),
+                str(eval_cnt),quality=quality)
             eval_cnt+=1
 
     # calculate metrics
@@ -62,7 +61,7 @@ def eval(model, val_iter, is_save=False, phase='test'):
             np.save(os.path.join(save_dir, '{}_{}_pred.npy'.format(phase, part_name)), part_pred)
             np.save(os.path.join(save_dir, '{}_{}_label.npy'.format(phase, part_name)), part_label)
             if phase == 'test':
-                recorder_lookup[part_name].write_result_to_tsv({
+                recorder_lookup[quality][part_name].write_result_to_tsv({
                     'acc': acc_part,
                     'uar': uar_part,
                     'f1': f1_part
@@ -79,26 +78,31 @@ def clean_chekpoints(expr_name, store_epoch):
             os.remove(os.path.join(root, checkpoint))
 
 if __name__ == '__main__':
-    eval_cnt=0
     opt = Options().parse()                             # get training options
     logger_path = os.path.join(opt.log_dir, opt.name, str(opt.cvNo)) # get logger path
     if not os.path.exists(logger_path):                 # make sure logger path exists
         os.mkdir(logger_path)
     
-    result_dir = os.path.join(opt.log_dir, opt.name, 'results')
-    if not os.path.exists(result_dir):                  # make sure result path exists
-        os.mkdir(result_dir)
+    # make sure result path exists
+    result_dir = os.path.join(opt.log_dir, opt.name, 'result')
+    for p in opt.quality:
+        if not os.path.exists(os.path.join(result_dir,'compress{}'.format(p))):                  
+            os.makedirs(os.path.join(result_dir,'compress{}'.format(p)))
     
     total_cv = 10 if opt.corpus_name == 'IEMOCAP' else 12
-    recorder_lookup = {                                 # init result recoreder
-        "total": ResultRecorder(os.path.join(result_dir, 'result_total.tsv'), total_cv=total_cv),
-        "azz": ResultRecorder(os.path.join(result_dir, 'result_azz.tsv'), total_cv=total_cv),
-        "zvz": ResultRecorder(os.path.join(result_dir, 'result_zvz.tsv'), total_cv=total_cv),
-        "zzl": ResultRecorder(os.path.join(result_dir, 'result_zzl.tsv'), total_cv=total_cv),
-        "avz": ResultRecorder(os.path.join(result_dir, 'result_avz.tsv'), total_cv=total_cv),
-        "azl": ResultRecorder(os.path.join(result_dir, 'result_azl.tsv'), total_cv=total_cv),
-        "zvl": ResultRecorder(os.path.join(result_dir, 'result_zvl.tsv'), total_cv=total_cv),
-    }
+    # init result recoreder
+    recorder_lookup = {}
+    for quality in opt.quality:
+        ppath=os.path.join(result_dir,'compress{}'.format(quality))
+        recorder_lookup[quality]={                                 # init result recoreder
+            "total": ResultRecorder(os.path.join(ppath, 'result_total.tsv'), total_cv=total_cv),
+            "azz": ResultRecorder(os.path.join(ppath, 'result_azz.tsv'), total_cv=total_cv),
+            "zvz": ResultRecorder(os.path.join(ppath, 'result_zvz.tsv'), total_cv=total_cv),
+            "zzl": ResultRecorder(os.path.join(ppath, 'result_zzl.tsv'), total_cv=total_cv),
+            "avz": ResultRecorder(os.path.join(ppath, 'result_avz.tsv'), total_cv=total_cv),
+            "azl": ResultRecorder(os.path.join(ppath, 'result_azl.tsv'), total_cv=total_cv),
+            "zvl": ResultRecorder(os.path.join(ppath, 'result_zvl.tsv'), total_cv=total_cv),
+        }
 
     suffix = '_'.join([opt.model, opt.dataset_mode])    # get logger suffix
     logger = get_logger(logger_path, suffix)            # get logger
@@ -145,21 +149,19 @@ if __name__ == '__main__':
             logger.info('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')
             model.save_networks(epoch)
-
-            # save compressed picture
             
         logger.info('End of training epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate(logger)                     # update learning rates at the end of every epoch.
         
         # eval
-        acc, uar, f1, cm = eval(model, val_dataset)
-        logger.info('Val result of epoch %d / %d acc %.4f uar %.4f f1 %.4f' % (epoch, opt.niter + opt.niter_decay, acc, uar, f1))
+        acc, uar, f1, cm = eval(model, val_dataset,quality=0, phase='val')
+        logger.info('Val result of epoch %d: qulity:0 acc %.4f uar %.4f f1 %.4f' % (epoch, acc, uar, f1))
         logger.info('\n{}'.format(cm))
         
         # show test result for debugging
         if opt.has_test and opt.verbose:
-            acc, uar, f1, cm = eval(model, tst_dataset)
-            logger.info('Tst result of epoch %d acc %.4f uar %.4f f1 %.4f' % (epoch, acc, uar, f1))
+            acc, uar, f1, cm = eval(model, tst_dataset, quality=0,phase='test')
+            logger.info('Tst result of epoch %d: qulity:0 acc %.4f uar %.4f f1 %.4f' % (epoch, acc, uar, f1))
             logger.info('\n{}'.format(cm))
 
         # record epoch with best result
@@ -187,15 +189,18 @@ if __name__ == '__main__':
     if opt.has_test:
         logger.info('Loading best model found on val set: epoch-%d' % best_eval_epoch)
         model.load_networks(best_eval_epoch)
-        _ = eval(model, val_dataset, is_save=True, phase='val')
-        acc, uar, f1, cm = eval(model, tst_dataset, is_save=True, phase='test')
-        logger.info('Tst result acc %.4f uar %.4f f1 %.4f' % (acc, uar, f1))
-        logger.info('\n{}'.format(cm))
-        recorder_lookup['total'].write_result_to_tsv({
-            'acc': acc,
-            'uar': uar,
-            'f1': f1
-        }, cvNo=opt.cvNo)
+        eval_cnt=0
+        for quality in opt.quality:
+            _ = eval(model, val_dataset,quality=quality, is_save=True, phase='val',save_pic_flag=True)
+            acc, uar, f1, cm = eval(model, tst_dataset,quality, is_save=True, phase='test',save_pic_flag=True)
+            logger.info('Tst result acc %.4f uar %.4f f1 %.4f' % (acc, uar, f1))
+            logger.info('\n{}'.format(cm))
+            recorder_lookup[quality]['total'].write_result_to_tsv({
+                'acc': acc,
+                'uar': uar,
+                'f1': f1
+            }, cvNo=opt.cvNo)
+            eval_cnt=0
     else:
         recorder_lookup['total'].write_result_to_tsv({
             'acc': best_eval_acc,

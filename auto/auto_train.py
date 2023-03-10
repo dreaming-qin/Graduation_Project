@@ -6,10 +6,10 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
     utt_fusion_train=True
     mmin_train=True
     cv_iter=range(1,11)
-    args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':1024,
-        'feat_compress_size':'32,32','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
+    args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':128,
+        'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
         'compress_flag':compress_flag,'save_compress_pic':True,
-        'checkpoints_dir':'./checkpoints','log_dir':'./logs'}
+        'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':32}
     
     # if os.path.exists(args_dict['checkpoints_dir']):
     #     shutil.rmtree(args_dict['checkpoints_dir'])
@@ -24,7 +24,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         ' --L_type=bert_large --input_dim_l=1024'
         ' --output_dim=4 --cls_layers=128,128 --dropout_rate=0.3'
         ' --niter={0[niter]} --niter_decay=10 --in_mem --beta1=0.9'
-        ' --batch_size=128 --lr=2e-4 --run_idx={0[run_idx]}'
+        ' --batch_size={0[batch_size]} --lr=2e-4 --run_idx={0[run_idx]}'
         ' --name=CAP_utt_fusion --suffix=AVL_run{0[run_idx]}' 
         ' --has_test --cvNo={0[cvNo]} --feat_compress_size={0[feat_compress_size]}'
         ' --quality={0[quality]}')
@@ -38,7 +38,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         ' --ce_weight=1.0 --mse_weight=4.0 --cycle_weight=2.0'
         ' --output_dim=4 --cls_layers=128,128 --dropout_rate=0.5'
         ' --niter={0[niter]} --niter_decay=30 --verbose --print_freq=10 --in_mem'
-        ' --batch_size=128 --lr=2e-4 --run_idx={0[run_idx]} --weight_decay=1e-5'
+        ' --batch_size={0[batch_size]} --lr=2e-4 --run_idx={0[run_idx]} --weight_decay=1e-5'
         ' --name=mmin_IEMOCAP --suffix=block_{0[n_blocks]}_run{0[run_idx]} --has_test'
         ' --cvNo={0[cvNo]} --embd_size={0[embd_size]} --feat_compress_size={0[feat_compress_size]}'
         ' --quality={0[quality]}')
