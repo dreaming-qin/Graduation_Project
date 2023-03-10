@@ -27,7 +27,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         ' --batch_size={0[batch_size]} --lr=2e-4 --run_idx={0[run_idx]}'
         ' --name=CAP_utt_fusion --suffix=AVL_run{0[run_idx]}' 
         ' --has_test --cvNo={0[cvNo]} --feat_compress_size={0[feat_compress_size]}'
-        ' --quality={0[quality]}')
+        ' --quality={0[quality]} --has_test')
     
     mmin_cmd=('python train_mmin.py --dataset_mode=multimodal_miss --model=mmin'
         ' --log_dir={0[log_dir]} --checkpoints_dir={0[checkpoints_dir]} --gpu_ids={0[gpu_ids]}'
@@ -41,7 +41,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         ' --batch_size={0[batch_size]} --lr=2e-4 --run_idx={0[run_idx]} --weight_decay=1e-5'
         ' --name=mmin_IEMOCAP --suffix=block_{0[n_blocks]}_run{0[run_idx]} --has_test'
         ' --cvNo={0[cvNo]} --embd_size={0[embd_size]} --feat_compress_size={0[feat_compress_size]}'
-        ' --quality={0[quality]}')
+        ' --quality={0[quality]} --has_test')
     
     for i in cv_iter:
         if args_dict['compress_flag']:
