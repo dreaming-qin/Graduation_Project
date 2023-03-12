@@ -3,7 +3,7 @@
 'AE'是auto encoder，指的是提出的Imagination Module
 'AE_cycle'指的是Imagination Module用来Cycle Consistency Learning的另一个Imagination Module
 
-2. 需要按照图片质量分开存储结果（未做）
+2. 需要按照图片质量分开存储结果（已做）
 
 
 转为linux需要注意的：
