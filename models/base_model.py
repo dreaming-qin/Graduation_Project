@@ -40,7 +40,6 @@ class BaseModel(ABC):
         self.model_names = []
         self.optimizers = []
         self.metric = 0  # used for learning rate policy 'plateau'
-        self.quality=None
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -115,13 +114,12 @@ class BaseModel(ABC):
                 net = getattr(self, 'net' + name)
                 net.train()
 
-    def test(self,quality=None):
+    def test(self):
         """Forward function used in test time.
+
         This function wraps <forward> function in no_grad() so we don't save intermediate steps for backprop
         It also calls <compute_visuals> to produce additional visualization results
         """
-        self.quality=quality
-        self.isTrain = False
         with torch.no_grad():
             self.forward()
 
@@ -174,22 +172,6 @@ class BaseModel(ABC):
                     net.cuda(self.gpu_ids[0])
                 else:
                     torch.save(net.cpu().state_dict(), save_path)
-
-    
-
-        file_name='{}'
-        for name in self.model_names:
-            if isinstance(name, str):
-                save_filename = '%s_net_%s.pth' % (epoch, name)
-                save_path = os.path.join(self.save_dir, save_filename)
-                net = getattr(self, 'net' + name)
-
-                if len(self.gpu_ids) > 0 and torch.cuda.is_available():
-                    torch.save(net.module.cpu().state_dict(), save_path)
-                    net.cuda(self.gpu_ids[0])
-                else:
-                    torch.save(net.cpu().state_dict(), save_path)
-
 
     def load_networks(self, epoch):
         """Load all the networks from the disk.
