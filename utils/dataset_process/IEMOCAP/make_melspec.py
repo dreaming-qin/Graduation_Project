@@ -3,7 +3,7 @@ import json
 import numpy as np
 import h5py
 from tqdm import tqdm
-from preprocess.melspec_extractor import MelSpecExtractor
+from .melspec_extractor import MelSpecExtractor
 
 def get_trn_val_tst(target_root_dir, cv, setname):
     int2name = np.load(os.path.join(target_root_dir, str(cv), '{}_int2name.npy'.format(setname)))

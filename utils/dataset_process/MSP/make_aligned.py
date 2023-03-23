@@ -8,16 +8,16 @@ from numpy.lib.function_base import extract
 from tqdm import tqdm
 import pickle as pkl
 
-from preprocess.tools.denseface_extractor import DensefaceExtractor
-from preprocess.tools.bert_extractor import BertExtractor
-from preprocess.MSP.make_comparE import ComParEExtractor
+from utils.dataset_process.tools.efficientface_extractor import efficientfaceExtractor
+from utils.dataset_process.tools.bert_extractor import BertExtractor
+from utils.dataset_process.MSP.make_comparE import OpenSMILEExtractor
 
 def load_A(config, save_path):
     if os.path.exists(save_path):
         print('All comparE feat found in {}'.format(save_path))
         all_feat = pkl.load(open(save_path, 'rb'))
     else:
-        extractor = ComParEExtractor()
+        extractor = OpenSMILEExtractor()
         trn_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'trn')
         val_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'val')
         tst_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'tst')
@@ -69,11 +69,11 @@ def get_all_utt_id(config):
     all_utt_ids = trn_int2name + val_int2name + tst_int2name
     return all_utt_ids
 
-def make_all_denseface(config):
+def make_all_efficientface(config):
     face_root = os.path.join(config['data_root'], 'Face', '{}')
-    extractor = DensefaceExtractor(device=0)
+    extractor = efficientfaceExtractor(device=0)
     all_utt_ids = get_all_utt_id(config)
-    feat_save_path = os.path.join(config['feature_root'], 'aligned', "V", "raw_denseface.h5")
+    feat_save_path = os.path.join(config['feature_root'], 'aligned', "V", "raw_efficientface.h5")
     h5f = h5py.File(feat_save_path, 'w')
     for utt_id in tqdm(all_utt_ids):
         face_dir = face_root.format(utt_id)
@@ -180,14 +180,14 @@ def make_all_bert(config):
 
 def make_aligned_data(config):
     raw_A_path = os.path.join(config['feature_root'], 'aligned', "A", "raw_comparE.h5")
-    raw_V_path = os.path.join(config['feature_root'], 'aligned', "V", "raw_denseface.h5")
+    raw_V_path = os.path.join(config['feature_root'], 'aligned', "V", "raw_efficientface.h5")
     raw_L_path = os.path.join(config['feature_root'], 'aligned', "L", "raw_bert.h5")
     raw_A = h5py.File(raw_A_path, 'r')
     raw_V = h5py.File(raw_V_path, 'r')
     raw_L = h5py.File(raw_L_path, 'r')
     all_utt_ids = get_all_utt_id(config)
     aligned_A_path = os.path.join(config['feature_root'], 'aligned', "A", "aligned_comparE.h5")
-    aligned_V_path = os.path.join(config['feature_root'], 'aligned', "V", "aligned_denseface.h5")
+    aligned_V_path = os.path.join(config['feature_root'], 'aligned', "V", "aligned_efficientface.h5")
     aligned_L_path = os.path.join(config['feature_root'], 'aligned', "L", "aligned_bert.h5")
     aligned_A_h5f = h5py.File(aligned_A_path, 'w')
     aligned_V_h5f = h5py.File(aligned_V_path, 'w')
@@ -273,9 +273,9 @@ if __name__ == '__main__':
             os.makedirs(modality_dir)
 
     # make raw feat record with timestamp
-    # make_all_comparE(config)
-    # make_all_denseface(config)
-    # make_all_bert(config)
+    make_all_comparE(config)
+    make_all_efficientface(config)
+    make_all_bert(config)
 
     # make_aligned_data
     # make_aligned_data(config)

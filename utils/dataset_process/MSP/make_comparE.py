@@ -8,7 +8,7 @@ from torch.nn.functional import normalize
 from tqdm import tqdm
 
 
-class ComParEExtractor(object):
+class OpenSMILEExtractor(object):
     ''' 抽取comparE特征, 输入音频路径, 输出npy数组, 每帧130d
     '''
     def __init__(self, opensmile_tool_dir=None, downsample=10, tmp_dir='.tmp', no_tmp=False):
@@ -63,7 +63,7 @@ def padding_to_fixlen(feat, max_len):
 
 def make_all_comparE(config):
     max_len = 50
-    extractor = ComParEExtractor()
+    extractor = OpenSMILEExtractor()
     trn_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'trn')
     val_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'val')
     tst_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'tst')

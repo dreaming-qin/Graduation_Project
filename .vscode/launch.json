@@ -22,7 +22,7 @@
                 "--corpus_name","IEMOCAP",
                 // --modality=$modality 
                 "--modality","AVL",
-                "--feat_compress", 
+                // "--feat_compress", 
                 "--save_compress_pic",
 
                 // 路径相关
@@ -37,7 +37,7 @@
                 "--output_dim","4", 
                 "--cls_layers","128,128",
                 "--dropout_rate","0.3",
-                "--niter","-9", 
+                "--niter","10", 
                 "--niter_decay","10", 
                 "--in_mem", 
                 "--beta1","0.9",
@@ -46,7 +46,7 @@
                 //--run_idx=$run_idx
                 "--run_idx","0",
                 "--print_freq","10",
-                "--gpu_ids","0",
+                "--gpu_ids","1",
                 "--cvNo","1",
                 "--embd_size","128", 
                 "--feat_compress_size","16,8",
@@ -57,8 +57,8 @@
                 "--norm_method","trn",
                 "--embd_method_a","maxpool",
 
-                "--V_type","denseface",
-                "--input_dim_v","342", 
+                "--V_type","efficientface",
+                "--input_dim_v","1024", 
                 "--embd_method_v","maxpool",
 
                 "--L_type","bert_large", 

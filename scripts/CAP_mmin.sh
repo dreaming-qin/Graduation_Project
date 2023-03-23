@@ -9,7 +9,7 @@ do
 cmd="python train_miss.py --dataset_mode=multimodal_miss --model=mmin
 --log_dir=./logs --checkpoints_dir=./checkpoints --gpu_ids=$gpu
 --A_type=comparE --input_dim_a=130 --norm_method=trn --embd_size_a=128 --embd_method_a=maxpool
---V_type=denseface --input_dim_v=342 --embd_size_v=128  --embd_method_v=maxpool
+--V_type=efficientface --input_dim_v=342 --embd_size_v=128  --embd_method_v=maxpool
 --L_type=bert_large --input_dim_l=1024 --embd_size_l=128 
 --AE_layers=256,128,64 --n_blocks=5 --num_thread=0 --corpus=IEMOCAP 
 --pretrained_path='checkpoints/CAP_utt_fusion_AVL_run0'

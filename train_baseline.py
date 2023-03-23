@@ -1,28 +1,36 @@
 import os
 import time
 import numpy as np
+
 from opts.get_opts import Options
 from data import create_dataset_with_args
 from models import create_model
 from utils.logger import get_logger, ResultRecorder
 from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
+from utils.feature_compress import save_compressed_feat
+
 
 def make_path(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def eval(model, val_iter, is_save=False, phase='test'):
+def eval(model, val_iter,quality, is_save=False, phase='test',save_pic_flag=False):
     model.eval()
     total_pred = []
     total_label = []
-    
     for i, data in enumerate(val_iter):  # inner loop within one epoch
-        model.set_input(data)         # unpack data from dataset and apply preprocessing
-        model.test()
+        model.set_input(data)        # unpack data from dataset and apply preprocessing
+        model.test(quality)
         pred = model.pred.argmax(dim=1).detach().cpu().numpy()
         label = data['label']
         total_pred.append(pred)
         total_label.append(label)
+        if opt.save_compress_pic and save_pic_flag:
+            global eval_cnt
+            save_compressed_feat(model.feat_compress,
+                os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(quality)),
+                str(eval_cnt),quality=quality)
+            eval_cnt+=1
     
     # calculate metrics
     total_pred = np.concatenate(total_pred)
@@ -53,8 +61,16 @@ if __name__ == '__main__':
     if not os.path.exists(logger_path):                 # make sure logger path exists
         os.mkdir(logger_path)
 
+    result_dir = os.path.join(opt.log_dir, opt.name, 'result')
+    if not os.path.exists(result_dir):                  # make sure result path exists
+        os.mkdir(result_dir)
+
     total_cv = 10 if opt.corpus_name == 'IEMOCAP' else 12
-    result_recorder = ResultRecorder(os.path.join(opt.log_dir, opt.name, 'result.tsv'), total_cv=total_cv) # init result recoreder
+    # init result recoreder
+    result_recorder = {}
+    for quality in opt.quality:
+        result_recorder[quality]=ResultRecorder(os.path.join(result_dir,
+            '{}.tsv'.format(quality)), total_cv=total_cv)
     suffix = '_'.join([opt.model, opt.dataset_mode])    # get logger suffix
     logger = get_logger(logger_path, suffix)            # get logger
     if opt.has_test:                                    # create a dataset given opt.dataset_mode and other options
@@ -86,7 +102,9 @@ if __name__ == '__main__':
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
                 logger.info('Cur epoch {}'.format(epoch) + ' loss ' + 
-                        ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
+                    ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
+                # logger.info('dynamic weight is {}'.format(
+                #     model.criterion_dynamic_weight.params.detach().cpu().numpy()))
 
             iter_data_time = time.time()
         if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
@@ -98,14 +116,14 @@ if __name__ == '__main__':
         model.update_learning_rate(logger)                     # update learning rates at the end of every epoch.
 
         # eval val set
-        acc, uar, f1, cm = eval(model, val_dataset)
-        logger.info('Val result of epoch %d / %d acc %.4f uar %.4f f1 %.4f' % (epoch, opt.niter + opt.niter_decay, acc, uar, f1))
+        acc, uar, f1, cm = eval(model, val_dataset,quality=0, phase='val')
+        logger.info('Val result of epoch %d: qulity:0 acc %.4f uar %.4f f1 %.4f' % (epoch,  acc, uar, f1))
         logger.info('\n{}'.format(cm))
 
         # show test result for debugging
         if opt.has_test and opt.verbose:
-            acc, uar, f1, cm = eval(model, tst_dataset)
-            logger.info('Tst result of epoch %d / %d acc %.4f uar %.4f f1 %.4f' % (epoch, opt.niter + opt.niter_decay, acc, uar, f1))
+            acc, uar, f1, cm = eval(model, tst_dataset,quality=0,phase='test')
+            logger.info('Tst result of epoch %d: qulity:0 acc %.4f uar %.4f f1 %.4f' % (epoch,  acc, uar, f1))
             logger.info('\n{}'.format(cm))
         
         # record epoch with best result
@@ -135,15 +153,18 @@ if __name__ == '__main__':
     if opt.has_test:
         logger.info('Loading best model found on val set: epoch-%d' % best_eval_epoch)
         model.load_networks(best_eval_epoch)
-        _ = eval(model, val_dataset, is_save=True, phase='val')
-        acc, uar, f1, cm = eval(model, tst_dataset, is_save=True, phase='test')
-        logger.info('Tst result acc %.4f uar %.4f f1 %.4f' % (acc, uar, f1))
-        logger.info('\n{}'.format(cm))
-        result_recorder.write_result_to_tsv({
-            'acc': acc,
-            'uar': uar,
-            'f1': f1
-        }, cvNo=opt.cvNo)
+        eval_cnt=0
+        for quality in opt.quality:
+            _ = eval(model, val_dataset,quality=quality, is_save=True, phase='val',save_pic_flag=True)
+            acc, uar, f1, cm = eval(model, tst_dataset,quality=quality, is_save=True, phase='test',save_pic_flag=True)
+            logger.info('quality:%d Tst result acc %.4f uar %.4f f1 %.4f' % (quality, acc, uar, f1))
+            logger.info('\n{}'.format(cm))
+            result_recorder[quality].write_result_to_tsv({
+                'acc': acc,
+                'uar': uar,
+                'f1': f1
+            }, cvNo=opt.cvNo)
+            eval_cnt=0
     else:
         result_recorder.write_result_to_tsv({
             'acc': best_eval_acc,

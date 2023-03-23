@@ -191,7 +191,7 @@ if __name__ == '__main__':
     class test:
         cvNo = 1
         A_type = "comparE"
-        V_type = "denseface"
+        V_type = "efficientface"
         L_type = "bert_large"
         norm_method = 'trn'
 

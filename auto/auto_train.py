@@ -1,15 +1,14 @@
 import os
-import shutil
-
 
 def auto_train_CAP(exp_No,gpu,compress_flag):
     utt_fusion_train=True
-    mmin_train=True
+    mmin_train=False
     cv_iter=range(1,11)
     args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':128,
         'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
         'compress_flag':compress_flag,'save_compress_pic':True,
-        'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':32}
+        'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':32,
+        'input_dim_v':1024}
     
     # if os.path.exists(args_dict['checkpoints_dir']):
     #     shutil.rmtree(args_dict['checkpoints_dir'])
@@ -20,7 +19,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         ' --gpu_ids={0[gpu_ids]} --modality=AVL --corpus_name=IEMOCAP'
         ' --log_dir={0[log_dir]} --checkpoints_dir={0[checkpoints_dir]} --print_freq=10' 
         ' --A_type=comparE --input_dim_a=130 --norm_method=trn --embd_size={0[embd_size]}'
-        ' --embd_method_a=maxpool --V_type=denseface --input_dim_v=342 --embd_method_v=maxpool'
+        ' --embd_method_a=maxpool --V_type=efficientface --input_dim_v={0[input_dim_v]} --embd_method_v=maxpool'
         ' --L_type=bert_large --input_dim_l=1024'
         ' --output_dim=4 --cls_layers=128,128 --dropout_rate=0.3'
         ' --niter={0[niter]} --niter_decay=10 --in_mem --beta1=0.9'
@@ -32,7 +31,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
     mmin_cmd=('python train_mmin.py --dataset_mode=multimodal_miss --model=mmin'
         ' --log_dir={0[log_dir]} --checkpoints_dir={0[checkpoints_dir]} --gpu_ids={0[gpu_ids]}'
         ' --A_type=comparE --input_dim_a=130 --norm_method=trn --embd_method_a=maxpool'
-        ' --V_type=denseface --input_dim_v=342  --embd_method_v=maxpool'
+        ' --V_type=efficientface --input_dim_v={0[input_dim_v]}  --embd_method_v=maxpool'
         ' --L_type=bert_large --input_dim_l=1024'
         ' --AE_layers=256,128,64 --n_blocks={0[n_blocks]} --num_thread=0 --corpus=IEMOCAP' 
         ' --ce_weight=1.0 --mse_weight=4.0 --cycle_weight=2.0'

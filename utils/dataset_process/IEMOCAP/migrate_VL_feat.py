@@ -12,7 +12,7 @@ def get_trn_val_tst(target_root_dir, cv, setname):
 
 
 def migrate_V(config):
-    migrate_root = os.path.join('/data3/lrc/Iemocap_feature/cv_level/feature/denseface/', str(1))
+    migrate_root = os.path.join('/data3/lrc/Iemocap_feature/cv_level/feature/efficientface/', str(1))
     src_v_trn = np.load(os.path.join(migrate_root, 'trn.npy'))
     src_v_val = np.load(os.path.join(migrate_root, 'val.npy'))
     src_v_tst = np.load(os.path.join(migrate_root, 'tst.npy'))
@@ -24,7 +24,7 @@ def migrate_V(config):
     val_int2name = list(map(lambda x: x[0].decode(), val_int2name))
     tst_int2name = list(map(lambda x: x[0].decode(), tst_int2name))
     all_utt_ids = trn_int2name + val_int2name + tst_int2name
-    all_h5f = h5py.File(os.path.join(config['feature_root'], 'V', 'denseface.h5'), 'w')
+    all_h5f = h5py.File(os.path.join(config['feature_root'], 'V', 'efficientface.h5'), 'w')
     for utt_id, v_feat in tqdm(zip(all_utt_ids, src_v_feat), total=len(all_utt_ids)):
         all_h5f[utt_id] = v_feat
 
@@ -52,5 +52,5 @@ if __name__ == '__main__':
     pwd = os.path.dirname(pwd)
     config_path = os.path.join(pwd, '../', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
-    # migrate_V(config)
+    migrate_V(config)
     migrate_L(config)
