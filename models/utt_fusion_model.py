@@ -92,6 +92,9 @@ class UttFusionModel(BaseModel):
             self.acoustic = input['A_feat'].float().to(self.device)
         if 'L' in self.modality:
             self.lexical = input['L_feat'].float().to(self.device)
+            if self.lexical.shape[1]<22:
+                aaa=torch.zeros((self.lexical.shape[0],22-self.lexical.shape[1],self.lexical.shape[2])).to(self.device)
+                self.lexical=torch.cat((self.lexical,aaa),dim=1)
         if 'V' in self.modality:
             self.visual = input['V_feat'].float().to(self.device)
         
@@ -109,6 +112,9 @@ class UttFusionModel(BaseModel):
             final_embd.append(self.feat_V)
 
         if 'L' in self.modality:
+            if self.lexical.shape[1]<5:
+                aaa=torch.zeros(self.lexical.shape[0],5-self.lexical.shape[1],self.lexical.shape[2])
+                self.lexical=torch.cat((self.lexical,aaa),dim=0)
             self.feat_L = self.netL(self.lexical)
             final_embd.append(self.feat_L)
         

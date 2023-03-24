@@ -8,9 +8,9 @@ from tqdm import tqdm
 import sys
 sys.path.append('/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline')
 
-from utils.dataset_process.IEMOCAP.make_text import make_all_bert
-from utils.dataset_process.IEMOCAP.make_audio import make_all_openSMILE
-from utils.dataset_process.IEMOCAP.make_video import make_all_face
+from utils.dataset_process.IEMOCAP.make_feature_text import make_all_bert
+from utils.dataset_process.IEMOCAP.make_feature_audio import make_all_openSMILE
+from utils.dataset_process.IEMOCAP.make_feature_video import make_all_face
 
 
 

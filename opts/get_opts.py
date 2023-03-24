@@ -65,6 +65,7 @@ class Options():
         parser.add_argument('--feat_compress_size', default='16,8', type=str, help='reshaped compressed feature')
         parser.add_argument('--quality', default='0', type=str, help='reshaped compressed feature')
         parser.add_argument('--save_compress_pic', action='store_true', help='save compressed feature to picture')
+        parser.add_argument('--test_modality', type=str,default='AVL', help='choose modality when test')
 
         # expr setting 
         parser.add_argument('--run_idx', type=int, default=1, help='experiment number; for repeat experiment')
