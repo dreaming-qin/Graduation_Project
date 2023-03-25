@@ -1,6 +1,6 @@
 {
     "data_root": "../dataset/IEMOCAP_full_release/",
-    "target_root": "../dataset/IEMOCAP_features_test/target",
+    "target_root": "../dataset/IEMOCAP_features_2021/target",
     "total_cv": 10,
-    "feature_root": "../dataset/IEMOCAP_features_test/"
+    "feature_root": "../dataset/IEMOCAP_features_2021/"
 }

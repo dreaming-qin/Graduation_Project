@@ -9,7 +9,7 @@ from models.networks.classifier import FcClassifier
 import uuid
 import shutil
 
-from utils.feature_compress import quantize_feature_train,get_tensor_feature_from_pic,quantize_feature_validation,dump_feature2D
+from utils.feature_compress import quantize_feature_train,save_compressed_feat
 
 class UttFusionModel(BaseModel):
     @staticmethod
@@ -82,12 +82,14 @@ class UttFusionModel(BaseModel):
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
     
-    def set_input(self, input):
+    def set_input(self, input,quality=None,save_pic_flag=None):
         """
         Unpack input data from the dataloader and perform necessary pre-processing steps.
         Parameters:
             input (dict): include the data itself and its metadata information.
         """
+        self.quality=quality
+        self.save_pic_flag=save_pic_flag
         if 'A' in self.modality:
             self.acoustic = input['A_feat'].float().to(self.device)
         if 'L' in self.modality:
@@ -112,12 +114,8 @@ class UttFusionModel(BaseModel):
             final_embd.append(self.feat_V)
 
         if 'L' in self.modality:
-            if self.lexical.shape[1]<5:
-                aaa=torch.zeros(self.lexical.shape[0],5-self.lexical.shape[1],self.lexical.shape[2])
-                self.lexical=torch.cat((self.lexical,aaa),dim=0)
             self.feat_L = self.netL(self.lexical)
             final_embd.append(self.feat_L)
-        
 
         # get model outputs
         self.feat = torch.cat(final_embd, dim=-1)
@@ -127,7 +125,9 @@ class UttFusionModel(BaseModel):
         if self.isTrain:
             self.feat=quantize_feature_train(self.feat)
         else:
-            feature3D=get_tensor_feature_from_pic(self.feat_compress,self.quality)
+            feature3D=save_compressed_feat(self.feat_compress,self.quality,
+                os.path.join(self.save_dir,'compressed_feat',str(self.quality)),
+                self.save_pic_flag)
             _,h,w=feature3D.shape
             self.feat=feature3D.reshape((-1,3*h*w))
 

@@ -1,30 +1,39 @@
 import os
 import time
 import numpy as np
+
 from opts.get_opts import Options
 from data import create_dataset, create_dataset_with_args
 from models import create_model
 from utils.logger import get_logger, ResultRecorder
 from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
+from utils.feature_compress import save_compressed_feat
+
 
 def make_path(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def eval(model, val_iter, is_save=False, phase='test'):
+def eval(model, val_iter,quality, is_save=False, phase='test',save_pic_flag=False):
     model.eval()
     total_pred = []
     total_label = []
     total_miss_type = []
-    for _, data in enumerate(val_iter):  # inner loop within one epoch
-        model.set_input(data)            # unpack data from dataset and apply preprocessing
-        model.test()
-        pred = model.pred.argmax(dim=1).detach().cpu().numpy()
-        label = data['label']
-        miss_type = np.array(data['miss_type'])
-        total_pred.append(pred)
-        total_label.append(label)
-        total_miss_type.append(miss_type)
+    if is_save:
+        modality=['avl','azz','zvz','zzl','avz','azl','zvl']
+    else:
+        modality=['avl']
+    for mod in modality:
+        for _, data in enumerate(val_iter):  # inner loop within one epochs
+            model.set_input(data,quality,save_pic_flag,mod)            # unpack data from dataset and apply preprocessing
+            model.test()
+            pred = model.pred.argmax(dim=1).detach().cpu().numpy()
+            label = data['label']
+            # miss_type = np.array(data['miss_type'])
+            miss_type = np.array([mod]*len(data['miss_type']))
+            total_pred.append(pred)
+            total_label.append(label)
+            total_miss_type.append(miss_type) 
 
     # calculate metrics
     total_pred = np.concatenate(total_pred)
@@ -42,7 +51,7 @@ def eval(model, val_iter, is_save=False, phase='test'):
         np.save(os.path.join(save_dir, '{}_label.npy'.format(phase)), total_label)
     
         # save part results
-        for part_name in ['azz', 'zvz', 'zzl', 'avz', 'azl', 'zvl']:
+        for part_name in ['avl','azz', 'zvz', 'zzl', 'avz', 'azl', 'zvl']:
             part_index = np.where(total_miss_type == part_name)
             part_pred = total_pred[part_index]
             part_label = total_label[part_index]
@@ -52,7 +61,7 @@ def eval(model, val_iter, is_save=False, phase='test'):
             np.save(os.path.join(save_dir, '{}_{}_pred.npy'.format(phase, part_name)), part_pred)
             np.save(os.path.join(save_dir, '{}_{}_label.npy'.format(phase, part_name)), part_label)
             if phase == 'test':
-                recorder_lookup[part_name].write_result_to_tsv({
+                recorder_lookup[quality][part_name].write_result_to_tsv({
                     'acc': acc_part,
                     'uar': uar_part,
                     'f1': f1_part
@@ -74,20 +83,24 @@ if __name__ == '__main__':
     if not os.path.exists(logger_path):                 # make sure logger path exists
         os.mkdir(logger_path)
     
-    result_dir = os.path.join(opt.log_dir, opt.name, 'results')
-    if not os.path.exists(result_dir):                  # make sure result path exists
-        os.mkdir(result_dir)
+    # make sure result path exists
+    result_dir = os.path.join(opt.log_dir, opt.name, 'result')
     
     total_cv = 10 if opt.corpus_name == 'IEMOCAP' else 12
-    recorder_lookup = {                                 # init result recoreder
-        "total": ResultRecorder(os.path.join(result_dir, 'result_total.tsv'), total_cv=total_cv),
-        "azz": ResultRecorder(os.path.join(result_dir, 'result_azz.tsv'), total_cv=total_cv),
-        "zvz": ResultRecorder(os.path.join(result_dir, 'result_zvz.tsv'), total_cv=total_cv),
-        "zzl": ResultRecorder(os.path.join(result_dir, 'result_zzl.tsv'), total_cv=total_cv),
-        "avz": ResultRecorder(os.path.join(result_dir, 'result_avz.tsv'), total_cv=total_cv),
-        "azl": ResultRecorder(os.path.join(result_dir, 'result_azl.tsv'), total_cv=total_cv),
-        "zvl": ResultRecorder(os.path.join(result_dir, 'result_zvl.tsv'), total_cv=total_cv),
-    }
+    # init result recoreder
+    recorder_lookup = {}
+    for quality in opt.quality:
+        ppath=os.path.join(result_dir,'compress{}'.format(quality))
+        recorder_lookup[quality]={                                 # init result recoreder
+            "total": ResultRecorder(os.path.join(ppath, 'result_total.tsv'), total_cv=total_cv),
+            "azz": ResultRecorder(os.path.join(ppath, 'result_azz.tsv'), total_cv=total_cv),
+            "zvz": ResultRecorder(os.path.join(ppath, 'result_zvz.tsv'), total_cv=total_cv),
+            "zzl": ResultRecorder(os.path.join(ppath, 'result_zzl.tsv'), total_cv=total_cv),
+            "avz": ResultRecorder(os.path.join(ppath, 'result_avz.tsv'), total_cv=total_cv),
+            "azl": ResultRecorder(os.path.join(ppath, 'result_azl.tsv'), total_cv=total_cv),
+            "zvl": ResultRecorder(os.path.join(ppath, 'result_zvl.tsv'), total_cv=total_cv),
+            "avl": ResultRecorder(os.path.join(ppath, 'result_avl.tsv'), total_cv=total_cv),
+        }
 
     suffix = '_'.join([opt.model, opt.dataset_mode])    # get logger suffix
     logger = get_logger(logger_path, suffix)            # get logger
@@ -116,32 +129,37 @@ if __name__ == '__main__':
             epoch_iter += opt.batch_size
             model.set_input(data)           # unpack data from dataset and apply preprocessing
             model.optimize_parameters(epoch)   # calculate loss functions, get gradients, update network weights
-                
+
+
             if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
                 logger.info('Cur epoch {}'.format(epoch) + ' loss ' + 
-                        ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
+                    ' '.join(map(lambda x:'{}:{{{}:.4f}}'.format(x, x), model.loss_names)).format(**losses))
+                # logger.info('dynamic weight is {}'.format(
+                #     model.criterion_dynamic_weight.params.detach().cpu().numpy()))
 
             iter_data_time = time.time()
-        
-        if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
+
+
+        # cache our model every <save_epoch_freq> epochs
+        if epoch % opt.save_epoch_freq == 0:              
             logger.info('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')
             model.save_networks(epoch)
-
+            
         logger.info('End of training epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate(logger)                     # update learning rates at the end of every epoch.
         
         # eval
-        acc, uar, f1, cm = eval(model, val_dataset)
-        logger.info('Val result of epoch %d / %d acc %.4f uar %.4f f1 %.4f' % (epoch, opt.niter + opt.niter_decay, acc, uar, f1))
+        acc, uar, f1, cm = eval(model, val_dataset,quality=0, phase='val')
+        logger.info('Val (modality:avl) result of epoch %d: qulity:0 acc %.4f uar %.4f f1 %.4f' % (epoch, acc, uar, f1))
         logger.info('\n{}'.format(cm))
         
         # show test result for debugging
         if opt.has_test and opt.verbose:
-            acc, uar, f1, cm = eval(model, tst_dataset)
-            logger.info('Tst result of epoch %d acc %.4f uar %.4f f1 %.4f' % (epoch, acc, uar, f1))
+            acc, uar, f1, cm = eval(model, tst_dataset, quality=0,phase='test')
+            logger.info('Tst (modality:avl) result of epoch %d: qulity:0 acc %.4f uar %.4f f1 %.4f' % (epoch, acc, uar, f1))
             logger.info('\n{}'.format(cm))
 
         # record epoch with best result
@@ -169,15 +187,18 @@ if __name__ == '__main__':
     if opt.has_test:
         logger.info('Loading best model found on val set: epoch-%d' % best_eval_epoch)
         model.load_networks(best_eval_epoch)
-        _ = eval(model, val_dataset, is_save=True, phase='val')
-        acc, uar, f1, cm = eval(model, tst_dataset, is_save=True, phase='test')
-        logger.info('Tst result acc %.4f uar %.4f f1 %.4f' % (acc, uar, f1))
-        logger.info('\n{}'.format(cm))
-        recorder_lookup['total'].write_result_to_tsv({
-            'acc': acc,
-            'uar': uar,
-            'f1': f1
-        }, cvNo=opt.cvNo)
+        eval_cnt=0
+        for quality in opt.quality:
+            _ = eval(model, val_dataset,quality=quality, is_save=True, phase='val',save_pic_flag=True)
+            acc, uar, f1, cm = eval(model, tst_dataset,quality, is_save=True, phase='test',save_pic_flag=True)
+            logger.info('quality:%d Tst result acc %.4f uar %.4f f1 %.4f' % (quality,acc, uar, f1))
+            logger.info('\n{}'.format(cm))
+            recorder_lookup[quality]['total'].write_result_to_tsv({
+                'acc': acc,
+                'uar': uar,
+                'f1': f1
+            }, cvNo=opt.cvNo)
+            eval_cnt=0
     else:
         recorder_lookup['total'].write_result_to_tsv({
             'acc': best_eval_acc,

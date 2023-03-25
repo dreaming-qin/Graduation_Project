@@ -7,7 +7,6 @@ from data import create_dataset_with_args
 from models import create_model
 from utils.logger import get_logger, ResultRecorder
 from sklearn.metrics import accuracy_score, recall_score, f1_score, confusion_matrix
-from utils.feature_compress import save_compressed_feat
 
 
 def make_path(path):
@@ -19,18 +18,12 @@ def eval(model, val_iter,quality, is_save=False, phase='test',save_pic_flag=Fals
     total_pred = []
     total_label = []
     for i, data in enumerate(val_iter):  # inner loop within one epoch
-        model.set_input(data)        # unpack data from dataset and apply preprocessing
-        model.test(quality)
+        model.set_input(data,quality=quality,save_pic_flag=save_pic_flag)        # unpack data from dataset and apply preprocessing
+        model.test()
         pred = model.pred.argmax(dim=1).detach().cpu().numpy()
         label = data['label']
         total_pred.append(pred)
         total_label.append(label)
-        if opt.save_compress_pic and save_pic_flag:
-            global eval_cnt
-            save_compressed_feat(model.feat_compress,
-                os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat',str(quality)),
-                str(eval_cnt),quality=quality)
-            eval_cnt+=1
     
     # calculate metrics
     total_pred = np.concatenate(total_pred)

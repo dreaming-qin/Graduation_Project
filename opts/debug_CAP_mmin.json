@@ -34,7 +34,7 @@
         "--n_blocks","5",
         "--num_thread","0",
         "--dropout_rate","0.5",
-        "--niter","30", 
+        "--niter","-29", 
         "--niter_decay","30",
         "--batch_size","130", 
         "--lr","2e-4",
@@ -53,7 +53,7 @@
         "--embd_method_a","maxpool",
 
         "--V_type","efficientface",
-        "--input_dim_v","342", 
+        "--input_dim_v","1024", 
         "--embd_method_v","maxpool",
 
         "--L_type","bert_large", 

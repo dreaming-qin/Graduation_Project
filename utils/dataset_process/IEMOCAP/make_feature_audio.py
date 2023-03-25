@@ -54,7 +54,8 @@ def get_trn_val_tst(target_root_dir, cv, setname):
 
 def make_all_comparE(config):
     extractor = OpenSMILEExtractor(opensmile_tool_dir='/root/opensmile',
-        tmp_dir=os.path.join(config['feature_root'],'openSMILEfeature'))
+        tmp_dir=os.path.join(config['feature_root'],'openSMILEfeature'),
+        no_tmp=True)
     trn_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'trn')
     val_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'val')
     tst_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'tst')

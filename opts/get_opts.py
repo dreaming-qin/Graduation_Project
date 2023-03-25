@@ -63,9 +63,8 @@ class Options():
         # 特征压缩参数
         parser.add_argument('--feat_compress', action='store_true', help='if true, feature compress loss is applied')
         parser.add_argument('--feat_compress_size', default='16,8', type=str, help='reshaped compressed feature')
-        parser.add_argument('--quality', default='0', type=str, help='reshaped compressed feature')
+        parser.add_argument('--quality', default='0,95,90,85,80', type=str, help='reshaped compressed feature')
         parser.add_argument('--save_compress_pic', action='store_true', help='save compressed feature to picture')
-        parser.add_argument('--test_modality', type=str,default='AVL', help='choose modality when test')
 
         # expr setting 
         parser.add_argument('--run_idx', type=int, default=1, help='experiment number; for repeat experiment')
@@ -156,6 +155,7 @@ class Options():
                 opt.name=opt.name+'_feat'
             print("Expr Name:", opt.name)
         opt.quality=[int(p) for p in opt.quality.split(',')]
+        opt.pic_path=os.path.join(opt.checkpoints_dir, opt.name,str(opt.cvNo),'compressed_feat')
         
         self.print_options(opt)
 

@@ -21,6 +21,8 @@ def get_logger(path, suffix):
 
 class ResultRecorder(object):
     def __init__(self, path, total_cv=10):
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
         self.path = path
         self.total_cv = total_cv
         if not os.path.exists(self.path):

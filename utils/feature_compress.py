@@ -32,7 +32,7 @@ def quantize_feature_validation(center_feature, n_bits=8):  # I consider numbers
     center_recon = orig_before_add_min + min_center_value.expand_as(orig_before_add_min)
     return center_recon, quantized_value_255, max_value_return, min_value_return
 
-def dump_feature2D(quantize_feature, filename,png_jpg_flag):
+def save_pic(quantize_feature, filename,png_jpg_flag):
     r'''
     input:
         feature:np.ndarray, 形状是[channel, wight, height], 已经量化好的特征
@@ -68,7 +68,20 @@ def dump_feature2D(quantize_feature, filename,png_jpg_flag):
         obj = obj.convert("L")
         obj.save(filename_write, format='JPEG', quality=png_jpg_flag)
     
-def get_tensor_feature_from_pic(feat_compress,quality,n_bits=8):
+def quantize_feature_train(center_feature, n_bits=8):
+    r1 = -0.002
+    r2 = 0.002  # 2*0.002*256 = 1 it is the change in the 1/255 not 255 scale
+    data_shape = center_feature.data.shape
+    quant_error_t = (r1 - r2) * torch.rand(data_shape) + r2
+
+    # quant_error = Variable(quant_error.cuda(), requires_grad=True)
+    quant_error = quant_error_t.to(center_feature.device)
+    # quant_error.cuda()
+    center_recon = center_feature + quant_error
+    return center_recon
+
+def save_compressed_feat(feat_compress,quality,save_path,save_pic_flag,n_bits=8):
+    # 会返回从图片中读取的结果
     def image_to_tensor(file, max_range, min_range,feature_shape,n_bits):
         read_feature_2D = cv2.imread(file,flags=cv2.IMREAD_GRAYSCALE)
         # print (str(os.path.getsize(filename_write)))  #THIS GIVES IN BYTES!!!!!
@@ -90,39 +103,17 @@ def get_tensor_feature_from_pic(feat_compress,quality,n_bits=8):
         return Variable(torch.Tensor(read_3D_feature))
 
     filename=str(uuid.uuid1())
-    save_path='./'
     _,features_val_255, max_val, min_val = quantize_feature_validation(feat_compress)
     features_val_255_numpy = features_val_255.data.cpu().numpy()
     features_val_255_numpy=features_val_255_numpy.reshape((-1,features_val_255.shape[2],
         features_val_255.shape[3]))
-    dump_feature2D (features_val_255_numpy,os.path.join(save_path,filename),quality)
+    save_pic (features_val_255_numpy,os.path.join(save_path,filename),quality)
     filename=os.path.join(save_path,'{}.{}'.format(filename,'png' if quality==0
         else 'jpg'))
     feature3D=image_to_tensor(filename,max_val,min_val,features_val_255_numpy.shape,n_bits)
-    os.remove(filename)
+    if not save_pic_flag:
+        os.remove(filename)
     return feature3D
-
-    
-def quantize_feature_train(center_feature, n_bits=8):
-    r1 = -0.002
-    r2 = 0.002  # 2*0.002*256 = 1 it is the change in the 1/255 not 255 scale
-    data_shape = center_feature.data.shape
-    quant_error_t = (r1 - r2) * torch.rand(data_shape) + r2
-
-    # quant_error = Variable(quant_error.cuda(), requires_grad=True)
-    quant_error = quant_error_t.to(center_feature.device)
-    # quant_error.cuda()
-    center_recon = center_feature + quant_error
-    return center_recon
-
-def save_compressed_feat(feat_compress,save_path,filename,quality):
-    _,features_val_255, _, _ = quantize_feature_validation(feat_compress)
-    features_val_255_numpy = features_val_255.data.cpu().numpy()
-    _, _, f_height, f_width = features_val_255.shape
-    features_val_255_numpy=features_val_255_numpy.reshape((-1,f_height,f_width))
-    file_name= os.path.join(save_path,filename)
-    dump_feature2D (features_val_255_numpy,file_name,quality)
-
 
 if __name__=='__main__':
     a=torch.randn((130,3,16,8))
