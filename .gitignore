@@ -18,7 +18,8 @@ bin-release/
 # add
 checkpoints/
 logs/
-upload_result/
+feat_result/
+trad_result/
 log.log
 *.tar
 

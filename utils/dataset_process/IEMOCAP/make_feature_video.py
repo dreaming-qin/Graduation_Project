@@ -12,7 +12,10 @@ import torch
 from PIL import Image
 
 import sys
-sys.path.append('/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline')
+current_directory = os.path.abspath(__file__)
+for _ in range(4):
+    current_directory=os.path.dirname(current_directory)
+sys.path.append(current_directory)
 
 
 from utils.dataset_process.tools.efficient_face.model import EfficientFaceTemporal
@@ -25,6 +28,18 @@ time_step=0.1
 def makedirs(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
+
+def resize(location,size):
+    r'''本论文中, 裁剪到的脸部尺寸大小都是64*64的, 所以这里设置裁剪的尺寸
+    location是坐标'''
+    top, right, bottom, left = location
+    y_offset=size[1]-(bottom-top)
+    x_offset=size[0]-(right-left)
+    top-=y_offset//2
+    bottom+=(y_offset+1)//2
+    left-=x_offset//2
+    right+=(x_offset+1)//2
+    return top, right, bottom, left
 
 def video_to_png(video_file,save_dir):
     makedirs(save_dir)
@@ -119,13 +134,14 @@ def crop_face(png_dir,save_dir):
         face_locations = face_recognition.face_locations(image)
         # 对于Ses05F_script02_*.avi，男方视频是黑色的，直接认定裁剪黑色的图片
         if 'Ses05F_script02_' in png_dir and png_dir[-4]=='M':
-            face_locations=[np.array([220,200,260,160])]
+            face_locations=[np.array([208,212,272,148])]
         if len(face_locations)!=1:
             face_locations_map[os.path.basename(png_dir)][png_file]=[]
             miss_index.append(png_file)
             continue
         face_locations_map[os.path.basename(png_dir)][png_file]=face_locations
-        top, right, bottom, left = face_locations[0]
+        top, right, bottom, left = resize(face_locations[0],size=(64,64))
+        
 
         # 提取人脸
         cropped = image[top:bottom, left:right]
@@ -141,7 +157,6 @@ def deal_with_miss_face(png_dir,save_dir,face_location_map):
 
     如果在相同文件夹有照片, 则用该文件夹内所有照片的坐标均值做坐标
     如果文件夹内没有照片, 就用邻近文件夹的所有照片的坐标均值做坐标
-    之后对坐标再进行+-5像素的操作
     '''
     def get_dir_avg(face_location_map):
         avg_map={}
@@ -191,10 +206,10 @@ def deal_with_miss_face(png_dir,save_dir,face_location_map):
                     save_pic(avg_map[sorted_list[sorted_index]],save_file,png_file)
     
     def save_pic(locations,save_file,png_file):
-        top, right, bottom, left = locations
+        top, right, bottom, left = resize(locations,size=(64,64))
         image = face_recognition.load_image_file(png_file)
         # 提取人脸
-        cropped = image[top-5:bottom+5, left-5:right+5]
+        cropped = image[top:bottom, left:right]
         plt.imsave(save_file, cropped)
     
     avg_map=get_dir_avg(face_location_map)
@@ -221,8 +236,6 @@ def get_trn_val_tst(target_root_dir, cv, setname):
 def make_all_face(config):
     def extract_feature(model,img_paths):
         video_transform = transforms.Compose([
-                    transforms.RandomHorizontalFlip(),
-                    transforms.RandomRotate(),
                     transforms.ToTensor(255)])
         video_transform.randomize_parameters()
         clip=[]
@@ -276,6 +289,7 @@ def make_all_face(config):
     h5f.close()
 
 def make_all_efficientface(config):
+    data_root=config['data_root']
     # get face pic
     session_list=[1,2,3,4,5]
     for session in session_list:
@@ -319,10 +333,9 @@ if __name__ == '__main__':
             os.makedirs(modality_dir)
     data_root=config['data_root']
     # get face pic
-    # session_list=[1,2,3,4,5]
-    session_list=[5]
+    session_list=[1,2,3,4,5]
+    # session_list=[5]
     for session in session_list:
-        # session=5
         video_dir=os.path.join(data_root,'Session{}/dialog/avi/DivX'.format(session))
         video_file_list=os.listdir(video_dir)
         for video_file in video_file_list:

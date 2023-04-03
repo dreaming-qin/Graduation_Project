@@ -7,6 +7,8 @@
 
 3. audio中的comparE_mean_std.h5有重复，疑似有问题。（作者提供的是这样）
 
+音频命令：ffmpeg -i 025.m4a  -ar 8000  -ac 1 -b:a 1k  -y out.aac 
+
 转为linux需要注意的：
 1.在launch.json中删掉最下面的参数
 2.在utils.logger.py 中的52行取消掉注释

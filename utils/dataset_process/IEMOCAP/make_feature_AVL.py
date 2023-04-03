@@ -6,11 +6,14 @@ import shutil
 from tqdm import tqdm
 
 import sys
-sys.path.append('/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline')
+current_directory = os.path.abspath(__file__)
+for _ in range(4):
+    current_directory=os.path.dirname(current_directory)
+sys.path.append(current_directory)
 
 from utils.dataset_process.IEMOCAP.make_feature_text import make_all_bert
 from utils.dataset_process.IEMOCAP.make_feature_audio import make_all_openSMILE
-from utils.dataset_process.IEMOCAP.make_feature_video import make_all_face
+from utils.dataset_process.IEMOCAP.make_feature_video import make_all_efficientface
 
 
 
@@ -89,18 +92,20 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 创建文件夹
-    save_dir = os.path.join(config['feature_root'], 'raw')
-    for modality in ['A', 'V', 'L']:
-        modality_dir = os.path.join(save_dir, modality)
-        if not os.path.exists(modality_dir):
-            os.makedirs(modality_dir)
+    save_dir_list = [os.path.join(config['feature_root'], 'raw'),
+        config['feature_root']]
+    for save_dir in save_dir_list:
+        for modality in ['A', 'V', 'L']:
+            modality_dir = os.path.join(save_dir, modality)
+            if not os.path.exists(modality_dir):
+                os.makedirs(modality_dir)
 
     # text
-    # make_all_bert(config)
-    # # audio
-    # make_all_openSMILE(config)
-    # # video
-    # make_all_face(config)
+    make_all_bert(config)
+    # audio
+    make_all_openSMILE(config)
+    # video
+    make_all_efficientface(config)
 
     # format_data
     format_data(config)

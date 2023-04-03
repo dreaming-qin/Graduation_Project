@@ -8,7 +8,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
         'compress_flag':compress_flag,'save_compress_pic':True,
         'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':128,
-        'input_dim_v':342}
+        'input_dim_v':1024}
     
     # if os.path.exists(args_dict['checkpoints_dir']):
     #     shutil.rmtree(args_dict['checkpoints_dir'])
@@ -66,4 +66,4 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
             os.system(cmd)
 
 if __name__ =='__main__':
-    auto_train_CAP(exp_No=1,gpu=1,compress_flag=False)
+    auto_train_CAP(exp_No=0,gpu=1,compress_flag=False)
