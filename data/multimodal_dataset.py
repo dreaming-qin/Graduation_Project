@@ -53,12 +53,15 @@ class MultimodalDataset(BaseDataset):
         self.L_type = opt.L_type
         self.all_L = \
             h5py.File(os.path.join(config['feature_root'], 'L', f'{self.L_type}.h5'), 'r')
-            
+        
+        self.all_time=h5py.File(os.path.join(config['target_root'], 'time.h5'), 'r')
+
         # load dataset in memory
         if opt.in_mem:
             self.all_A = self.h5_to_dict(self.all_A)
             self.all_V = self.h5_to_dict(self.all_V)
             self.all_L = self.h5_to_dict(self.all_L)
+            self.all_time = self.h5_to_dict(self.all_time)
         
         # load target
         label_path = os.path.join(config['target_root'], f'{cvNo}', f"{set_name}_label.npy")
@@ -82,12 +85,15 @@ class MultimodalDataset(BaseDataset):
         V_feat = torch.from_numpy(self.all_V[int2name][()]).float()
         # process L_feat
         L_feat = torch.from_numpy(self.all_L[int2name][()]).float()
+        # process time
+        time = self.all_time[int2name][()]
         return {
             'A_feat': A_feat, 
             'V_feat': V_feat,
             'L_feat': L_feat,
             'label': label,
-            'int2name': int2name
+            'int2name': int2name,
+            'time':time
         }
     
     def __len__(self):
@@ -129,13 +135,15 @@ class MultimodalDataset(BaseDataset):
         L = pad_sequence(L, batch_first=True, padding_value=0)
         label = torch.tensor([sample['label'] for sample in batch])
         int2name = [sample['int2name'] for sample in batch]
+        time = [sample['time'] for sample in batch]
         return {
             'A_feat': A, 
             'V_feat': V,
             'L_feat': L,
             'label': label,
             'lengths': lengths,
-            'int2name': int2name
+            'int2name': int2name,
+            'time':time
         }
 
 

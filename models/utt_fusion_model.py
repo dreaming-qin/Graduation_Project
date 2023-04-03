@@ -90,6 +90,7 @@ class UttFusionModel(BaseModel):
         """
         self.quality=quality
         self.save_pic_flag=save_pic_flag
+        self.time=sum(input['time'])
         if 'A' in self.modality:
             self.acoustic = input['A_feat'].float().to(self.device)
         if 'L' in self.modality:
@@ -125,8 +126,9 @@ class UttFusionModel(BaseModel):
         if self.isTrain:
             self.feat=quantize_feature_train(self.feat)
         else:
+            file_name='{:.4f}-{}'.format(self.time,str(uuid.uuid1()))
             feature3D=save_compressed_feat(self.feat_compress,self.quality,
-                os.path.join(self.save_dir,'compressed_feat',str(self.quality)),
+                os.path.join(self.save_dir,'compressed_feat',str(self.quality)),file_name,
                 self.save_pic_flag)
             _,h,w=feature3D.shape
             self.feat=feature3D.reshape((-1,3*h*w))

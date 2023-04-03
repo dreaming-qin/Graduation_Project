@@ -136,6 +136,7 @@ class MMINModel(BaseModel):
         acoustic = input['A_feat'].float().to(self.device)
         lexical = input['L_feat'].float().to(self.device)
         visual = input['V_feat'].float().to(self.device)
+        self.time=sum(input['time'])
         if self.isTrain:
             self.label = input['label'].to(self.device)
             self.missing_index = input['missing_index'].long().to(self.device)
@@ -247,7 +248,8 @@ class MMINModel(BaseModel):
             self.feat_compress=self.get_compressed_feat()
             # 完成1,2步
             pic_path=os.path.join(self.save_dir,'compressed_feat',str(self.quality),str(self.test_modality))
-            feature3D=save_compressed_feat(self.feat_compress,self.quality,pic_path,self.save_pic_flag)
+            file_name='{:.4f}-{}'.format(self.time,str(uuid.uuid1()))
+            feature3D=save_compressed_feat(self.feat_compress,self.quality,pic_path,file_name,self.save_pic_flag)
             # 完成3,4步
             self.feat_fusion_miss=self.get_compressed_feat_cloud(feature3D)
             

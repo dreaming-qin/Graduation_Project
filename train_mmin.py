@@ -23,8 +23,8 @@ def eval(model, val_iter,quality, is_save=False, phase='test',save_pic_flag=Fals
         modality=['avl','azz','zvz','zzl','avz','azl','zvl']
     else:
         modality=['avl']
-    for mod in modality:
-        for _, data in enumerate(val_iter):  # inner loop within one epochs
+    for _, data in enumerate(val_iter):  # inner loop within one epochs
+        for mod in modality:
             model.set_input(data,quality,save_pic_flag,mod)            # unpack data from dataset and apply preprocessing
             model.test()
             pred = model.pred.argmax(dim=1).detach().cpu().numpy()

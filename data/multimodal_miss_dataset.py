@@ -54,11 +54,14 @@ class MultimodalMissDataset(BaseDataset):
         self.all_L = \
             h5py.File(os.path.join(config['feature_root'], 'L', f'{self.L_type}.h5'), 'r')
         
+        self.all_time=h5py.File(os.path.join(config['target_root'], 'time.h5'), 'r')
+        
         # load dataset in memory
         if opt.in_mem:
             self.all_A = self.h5_to_dict(self.all_A)
             self.all_V = self.h5_to_dict(self.all_V)
             self.all_L = self.h5_to_dict(self.all_L)
+            self.all_time = self.h5_to_dict(self.all_time)
             
         # load target
         label_path = os.path.join(config['target_root'], f'{cvNo}', f"{set_name}_label.npy")
@@ -68,26 +71,16 @@ class MultimodalMissDataset(BaseDataset):
             self.label = np.argmax(self.label, axis=1)
         self.int2name = np.load(int2name_path)
         # make missing index
-        if set_name != 'trn':           # val && tst
-            self.missing_index = torch.tensor([
-                [1,0,0], # AZZ
-                [0,1,0], # ZVZ
-                [0,0,1], # ZZL
-                [1,1,0], # AVZ
-                [1,0,1], # AZL
-                [0,1,1], # ZVL
-            ] * len(self.label)).long()
-            self.miss_type = ['azz', 'zvz', 'zzl', 'avz', 'azl', 'zvl'] * len(self.label)
-        else:                           # trn
-            self.missing_index = [
-                [1,0,0], # AZZ
-                [0,1,0], # ZVZ
-                [0,0,1], # ZZL
-                [1,1,0], # AVZ
-                [1,0,1], # AZL
-                [0,1,1], # ZVL
-            ]
-            self.miss_type = ['azz', 'zvz', 'zzl', 'avz', 'azl', 'zvl']
+        self.missing_index = [
+            [1,0,0], # AZZ
+            [0,1,0], # ZVZ
+            [0,0,1], # ZZL
+            [1,1,0], # AVZ
+            [1,0,1], # AZL
+            [0,1,1], # ZVL
+            [1,1,1], # AVL
+        ]
+        self.miss_type = ['azz', 'zvz', 'zzl', 'avz', 'azl', 'zvl','avl']
         
         # set collate function
         self.manual_collate_fn = True
@@ -99,15 +92,10 @@ class MultimodalMissDataset(BaseDataset):
         return ret
     
     def __getitem__(self, index):
-        if self.set_name != 'trn':
-            feat_idx = index // 6         # totally 6 missing types
-            missing_index = self.missing_index[index]         
-            miss_type = self.miss_type[index]
-        else:
-            feat_idx = index
-            _miss_i = random.choice(list(range(len(self.missing_index))))
-            missing_index = torch.tensor(self.missing_index[_miss_i]).long()
-            miss_type = self.miss_type[_miss_i]
+        feat_idx = index
+        _miss_i = random.choice(list(range(len(self.missing_index))))
+        missing_index = torch.tensor(self.missing_index[_miss_i]).long()
+        miss_type = self.miss_type[_miss_i]
         
         int2name = self.int2name[feat_idx]
         if self.corpus_name == 'IEMOCAP':
@@ -122,7 +110,8 @@ class MultimodalMissDataset(BaseDataset):
         V_feat = torch.from_numpy(self.all_V[int2name][()]).float()
         # proveee L_feat
         L_feat = torch.from_numpy(self.all_L[int2name][()]).float()
-        
+        # process time
+        time = self.all_time[int2name][()]
         return {
             'A_feat': A_feat, 
             'V_feat': V_feat,
@@ -130,19 +119,12 @@ class MultimodalMissDataset(BaseDataset):
             'label': label,
             'int2name': int2name,
             'missing_index': missing_index,
-            'miss_type': miss_type}
-        # } if self.set_name == 'trn' else{
-        #     'A_feat': A_feat * missing_index[0], 
-        #     'V_feat': V_feat * missing_index[1],
-        #     'L_feat': L_feat * missing_index[2],
-        #     'label': label,
-        #     'int2name': int2name,
-        #     'missing_index': missing_index,
-        #     'miss_type': miss_type
-        # }
+            'miss_type': miss_type,
+            'time':time
+        }
     
     def __len__(self):
-        return len(self.missing_index) if self.set_name != 'trn' else len(self.label)
+        return len(self.label)
     
     def normalize_on_utt(self, features):
         mean_f = torch.mean(features, dim=0).unsqueeze(0).float()
@@ -176,6 +158,7 @@ class MultimodalMissDataset(BaseDataset):
         int2name = [sample['int2name'] for sample in batch]
         missing_index = torch.cat([sample['missing_index'].unsqueeze(0) for sample in batch], axis=0)
         miss_type = [sample['miss_type'] for sample in batch]
+        time = [sample['time'] for sample in batch]
         return {
             'A_feat': A, 
             'V_feat': V,
@@ -184,7 +167,8 @@ class MultimodalMissDataset(BaseDataset):
             'lengths': lengths,
             'int2name': int2name,
             'missing_index': missing_index,
-            'miss_type': miss_type
+            'miss_type': miss_type,
+            'time':time
         }
 
 if __name__ == '__main__':

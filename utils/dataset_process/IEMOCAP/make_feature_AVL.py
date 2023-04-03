@@ -125,4 +125,5 @@ if __name__ == '__main__':
         os.path.join(config['feature_root'], "V", 'efficientface.h5'))
     shutil.copyfile(os.path.join(config['feature_root'], 'raw', "L", "bert_large.h5"),
         os.path.join(config['feature_root'], "L", 'bert_large.h5'))
+    shutil.rmtree(os.path.join(config['feature_root'], 'raw'))
 

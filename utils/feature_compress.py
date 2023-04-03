@@ -80,7 +80,7 @@ def quantize_feature_train(center_feature, n_bits=8):
     center_recon = center_feature + quant_error
     return center_recon
 
-def save_compressed_feat(feat_compress,quality,save_path,save_pic_flag,n_bits=8):
+def save_compressed_feat(feat_compress,quality,save_path,filename,save_pic_flag,n_bits=8):
     # 会返回从图片中读取的结果
     def image_to_tensor(file, max_range, min_range,feature_shape,n_bits):
         read_feature_2D = cv2.imread(file,flags=cv2.IMREAD_GRAYSCALE)
@@ -102,7 +102,6 @@ def save_compressed_feat(feat_compress,quality,save_path,save_pic_flag,n_bits=8)
         read_3D_feature = (read_3D_feature * (max_range - min_range) / bit_range) + min_range
         return Variable(torch.Tensor(read_3D_feature))
 
-    filename=str(uuid.uuid1())
     _,features_val_255, max_val, min_val = quantize_feature_validation(feat_compress)
     features_val_255_numpy = features_val_255.data.cpu().numpy()
     features_val_255_numpy=features_val_255_numpy.reshape((-1,features_val_255.shape[2],

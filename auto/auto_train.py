@@ -1,6 +1,7 @@
 import os
+import shutil
 
-def auto_train_CAP(exp_No,gpu,compress_flag):
+def auto_train_CAP(exp_No,gpu,compress_flag,type):
     utt_fusion_train=True
     mmin_train=True
     cv_iter=range(1,11)
@@ -9,6 +10,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
         'compress_flag':compress_flag,'save_compress_pic':True,
         'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':128,
         'input_dim_v':1024}
+    
     
     # if os.path.exists(args_dict['checkpoints_dir']):
     #     shutil.rmtree(args_dict['checkpoints_dir'])
@@ -64,6 +66,16 @@ def auto_train_CAP(exp_No,gpu,compress_flag):
             cmd=mmin_cmd.format(args_dict)
             print(cmd)
             os.system(cmd)
+    
+    
+    os.makedirs('./feat_result/{}'.format(type),exist_ok=True)
+    fusion_dir='CAP_utt_fusion_AVL_run{0[run_idx]}'.format(args_dict)
+    mmin_dir='mmin_IEMOCAP_block_{0[n_blocks]}_run{0[run_idx]}'.format(args_dict)
+    os.system('cp -rf {0[log_dir]}/{1}/ feat_result/{2}/'.format(args_dict,fusion_dir,type))
+    os.system('cp -rf {0[log_dir]}/{1}/ feat_result/{2}/'.format(args_dict,mmin_dir,type))
+    os.system('cp -rf {0[checkpoints_dir]}/{1}/ feat_result/{2}/'.format(args_dict,fusion_dir,type))
+    os.system('cp -rf {0[checkpoints_dir]}/{1}/ feat_result/{2}/'.format(args_dict,mmin_dir,type))
+    os.system('cd feat_result/{}/ && rm -rf */*/*.npy */*/*.pth'.format(type))
 
 if __name__ =='__main__':
-    auto_train_CAP(exp_No=0,gpu=1,compress_flag=False)
+    auto_train_CAP(exp_No=0,gpu=1,compress_flag=False,type='ours')
