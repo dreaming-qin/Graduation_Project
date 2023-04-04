@@ -20,6 +20,7 @@ checkpoints/
 logs/
 feat_result/
 trad_result/
+VVCSoftware_VTM-VTM-15.0/
 log.log
 *.tar
 

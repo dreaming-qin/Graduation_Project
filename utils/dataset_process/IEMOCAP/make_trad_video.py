@@ -51,206 +51,73 @@ def get_trn_val_tst(target_root_dir, cv, setname):
 def encode_and_decode(config):
     r'''在这里实现encode和decode'''
     def encode(png_dir,VVCdir):
-        pass
-    def get_result(VVCdir,save_csv_file):
-        pass
-    def decode(VVCdir,savepng_dir):
-        pass
-    all_utt_ids = get_all_utt_id(config)
+        r'''png_dir是裁剪好的脸部png图片
+        png图片序列-> yuv
+        1.将png序列变成yuv拖入至VVCdir中
+        2.使用命令行运行EncoderAppStaticd'''
+        # 对第一步, 由于face中的命名问题需要创建一个新的文件夹来复制图片并重命名图片使其符合ffmpeg要求
+        # 命名格式是: 0.1000.png -> 0001.png
+        tmp_dir='./tmp'
+        for png_file in os.listdir(png_dir):
+            cnt=int(float(png_file.split('.png')[0])*10)
+            new_name='{:.4d}.png'.format(cnt)
+            new_png_file=os.path.join(tmp_dir, new_name)
+            old_png_file=os.path.join(png_dir, png_file)
+            shutil.copyfile(old_png_file,new_png_file)
+        # 将图片变成yuv格式
+        cmd='cd {} &&ffmpeg -y -r 10 -i %4d.png -pix_fmt yuv420p -s 64x64 input.yuv'.format(tmp_dir)
+        os.system(cmd)
+        shutil.copyfile(os.path.join(tmp_dir,'input.yuv',os.path.join(VVCdir,'input.yuv')))
+        shutil.rmtree(tmp_dir)
 
-
-def resize(location,size):
-    r'''本论文中, 裁剪到的脸部尺寸大小都是64*64的, 所以这里设置裁剪的尺寸
-    location是坐标'''
-    top, right, bottom, left = location
-    y_offset=size[1]-(bottom-top)
-    x_offset=size[0]-(right-left)
-    top-=y_offset//2
-    bottom+=(y_offset+1)//2
-    left-=x_offset//2
-    right+=(x_offset+1)//2
-    return top, right, bottom, left
-
-def video_to_png(video_file,save_dir):
-    makedirs(save_dir)
-    #读取视频
-    cap = cv2.VideoCapture(video_file)
-    fps = round(cap.get(cv2.CAP_PROP_FPS)) #获取视频的帧率
-    assert fps==30
-    timestamp=1/fps
-    step=round(time_step/timestamp)
-    cnt=0.0
-    frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    for i in range(int(frames)):
-        if i%step==0 and cap.grab():
-            _, frame = cap.retrieve()  #解码,并返回捕获的视频帧    
-            #拼接图片保存路径
-            cnt=timestamp*i
-            newPath = os.path.join(save_dir,'{:.4f}.png'.format(cnt))
-            #将图片按照设置格式，保存到文件
-            cv2.imencode('.png', frame)[1].tofile(newPath)
-
-def divide_png(png_dir,transcriptions_txt,save_dir):
-    r'''保存的路径将会是{save_dir}/{根据transcriptions_txt决定的name},
-    在这里将会裁剪主要测试人员的那一部分
-    返回所有的图片存储路径, 列表形式
-    '''
-    def check_name(name):
-        if not name.startswith('Ses') :
-            return False
-        try:
-            int(name[-3:])
-        except Exception:
-            return False
-        return True
-    
-    with open(transcriptions_txt,'r') as f:
-        lines=f.readlines()
-    png_file_list=sorted(os.listdir(png_dir),key=lambda x:float(x.split('.png')[0]))
-    ans=[]
-    for line in lines:
-        line=line.strip().split(' ')
-        if not check_name(line[0]) :
-            print('unvalid name: {} in {}'.format(line[0].strip(),
-                os.path.basename(transcriptions_txt)))
-            continue
-        # 属性参数
-        name=line[0]
-        type1,type2=name[5],name[-4]
-        assert type1=='F' or type1=='M'
-        assert type2=='F' or type2=='M'
-        makedirs(os.path.join(save_dir,name))
-        ans.append(os.path.join(save_dir,name))
-        # 迭代要用到的参数
-        start_time=float(line[1][1:line[1].find('-')])
-        end_time=float(line[1][line[1].find('-')+1:-2])
-        init_flag=False
-        init_time=0
-        for png_index in range(len(png_file_list)):
-            png_file=os.path.join(png_dir,png_file_list[png_index])
-            previx=float(png_file_list[png_index].split('.png')[0])
-            if previx>end_time:
-                break
-            png_index+=1
-            if previx<start_time:
-                if png_index>=len(png_file_list):
-                    break
-                continue
-            if not init_flag:
-                init_flag=True
-                init_time=previx
-            img = cv2.imread(png_file)
-            # 根据主要测试人员裁剪图片，裁剪坐标为[y0:y1, x0:x1]
-            if type1==type2:
-                cropped = img[:, 0:img.shape[1]//2]  
-            else:
-                cropped = img[:, img.shape[1]//2:]
-            save_one=os.path.join(save_dir,name,'{:.4f}.png'.format(previx-init_time))  
-            cv2.imwrite(save_one, cropped)
-    return ans
-
-def crop_face(png_dir,save_dir):
-    r'''会存到{save_dir}/{os.path.basename(png_dir)}那
-    '''
-    # 需要进行人脸检测, 放在外面会报runtime错误
-    import face_recognition
-    save_dir=os.path.join(save_dir,os.path.basename(png_dir))
-    makedirs(save_dir)
-
-    face_locations_map={}
-    face_locations_map[os.path.basename(png_dir)]={}
-    miss_index=[]
-    for png_file in os.listdir(png_dir):
-        image = face_recognition.load_image_file(os.path.join(png_dir,png_file))
-        # 基于hog机器学习模型进行人脸识别，不能使用gpu加速
-        face_locations = face_recognition.face_locations(image)
-        # 对于Ses05F_script02_*.avi，男方视频是黑色的，直接认定裁剪黑色的图片
-        if 'Ses05F_script02_' in png_dir and png_dir[-4]=='M':
-            face_locations=[np.array([208,212,272,148])]
-        if len(face_locations)!=1:
-            face_locations_map[os.path.basename(png_dir)][png_file]=[]
-            miss_index.append(png_file)
-            continue
-        face_locations_map[os.path.basename(png_dir)][png_file]=face_locations
-        top, right, bottom, left = resize(face_locations[0],size=(64,64))
+        frames=len(os.listdir(png_dir))
+        # 第二步:使用命令行运行EncoderAppStaticd
+        cmd = "cd {} && ./EncoderAppStaticd  -c encoder_lowdelay_vtm.cfg -q {} -f {} > Enc_Out.txt".format(
+                VVCdir, config['qp'], frames)
+        print(cmd)
+        os.system(cmd)
+        return 
         
+    def get_result(utt_id,VVCdir,save_file):
+        r'''在编码后会获得二进制流文件str.bin, 获得结果并以append的形式追加到save_csv_file中'''
+        makedirs(os.path.dirname(save_file))
+        bin_file=os.path.join(VVCdir,'str.bin')
+        byte=os.path.getsize(bin_file)
+        with open(save_file,'a') as f:
+            f.writelines('{},{}\n'.format(utt_id,byte))
+        return
 
-        # 提取人脸
-        cropped = image[top:bottom, left:right]
-        save_one=os.path.join(save_dir,png_file)  
-        plt.imsave(save_one, cropped)
-    if len(miss_index)!=0:
-        print('missing index len of is {} in {}'.format(len(miss_index),os.path.basename(png_dir)))
-    return face_locations_map
+    def decode(VVCdir,save_png_dir):
+        r'''save_png_dir是解码后的png图片序列
+        yuv->png图片序列
+        1. 将bin解码为yuv
+        2. 将yuv变为png图片序列'''
+        # 第一步: 将bin解码为yuv
+        command = "cd {} && ./DecoderAppStaticd -b str.bin -o output.yuv > Dec_Out.txt".format(
+                VVCdir)
+        print(command)
+        os.system(command)
+        shutil.copyfile(os.path.join(VVCdir,'output.yuv',os.path.join(save_png_dir,'output.yuv')))
+        # 第二步: 将yuv变为png图片序列
+        command = "cd {} && ffmpeg -s 64x64 -i output.yuv %4d.png".format(
+                save_png_dir)
+        print(command)
+        os.system(command)
+        return
+    
+    all_utt_ids = get_all_utt_id(config)
+    print('start encoding and decoding')
+    for utt_id in tqdm(all_utt_ids):
+        session = utt_id[4]
+        png_dir=os.path.join(config['data_root'],'Session{}/face/{}'.format(session,utt_id))
+        VVCdir='./VVCSoftware_VTM-VTM-15.0/encode_video_demo'
+        encode(png_dir,VVCdir)
+        save_file='./trad_result/V/qp{}.txt'.format(config['qp'])
+        get_result(utt_id,VVCdir,save_file)
+        save_png_dir=os.path.join(config['trad_data_root'],'V/qp{}/{}'.format(config['qp'],utt_id))
+        decode(VVCdir,save_png_dir)
 
-def deal_with_miss_face(png_dir,save_dir,face_location_map):
-    r'''会存到{save_dir}/{face_location_map[key]}那
-    {png_dir}/{face_location_map[key]}才是真正的图片文件夹
-
-    如果在相同文件夹有照片, 则用该文件夹内所有照片的坐标均值做坐标
-    如果文件夹内没有照片, 就用邻近文件夹的所有照片的坐标均值做坐标
-    '''
-    def get_dir_avg(face_location_map):
-        avg_map={}
-        for key1 in face_location_map:
-            sum=[]
-            for _,values in face_location_map[key1].items():
-                if len(values)!=0:
-                    for val2 in values:
-                        sum.append(val2)
-            if len(sum)!=0:
-                avg=np.mean(sum,axis=0)
-                avg_map[key1]=avg.astype(int)
-        return avg_map
-    
-    def get_sorted_key(face_location_map,avg_map):
-        sorted_Mlist=[]
-        sorted_Flist=[]
-        for key1 in face_location_map:
-            if key1 not in avg_map:
-                continue
-            assert key1[-4]=='F' or key1[-4]=='M'
-            if key1[-4]=='F':
-                sorted_Flist.append(key1)
-            elif key1[-4]=='M':
-                sorted_Mlist.append(key1)
-        return sorted(sorted_Mlist),sorted(sorted_Flist)
-    
-    def fix_missing(png_dir,save_dir,face_location_map,sorted_list,avg_map):
-        # 先处理在相同文件夹有照片的情况
-        for key1 in face_location_map:
-            if key1 in avg_map:
-                for key2,values2 in face_location_map[key1].items():
-                    if len(values2)==0:
-                        png_file=os.path.join(png_dir,key1,key2)
-                        save_file=os.path.join(save_dir,key1,key2)
-                        save_pic(avg_map[key1],save_file,png_file)
-        # 再处理文件夹没有照片的情况
-        sorted_index=0
-        for key1 in face_location_map:
-            if key1 not in avg_map:
-                if int(key1[-3:])>int(sorted_list[sorted_index][-3:]) and\
-                    sorted_index<len(sorted_list)-1:
-                    sorted_index+=1
-                for key2 in face_location_map[key1]: 
-                    png_file=os.path.join(png_dir,key1,key2)
-                    save_file=os.path.join(save_dir,key1,key2)
-                    save_pic(avg_map[sorted_list[sorted_index]],save_file,png_file)
-    
-    def save_pic(locations,save_file,png_file):
-        top, right, bottom, left = resize(locations,size=(64,64))
-        image = face_recognition.load_image_file(png_file)
-        # 提取人脸
-        cropped = image[top:bottom, left:right]
-        plt.imsave(save_file, cropped)
-    
-    avg_map=get_dir_avg(face_location_map)
-    M_list,F_list=get_sorted_key(face_location_map,avg_map)
-    fix_missing(png_dir,save_dir,face_location_map,M_list,avg_map)
-    fix_missing(png_dir,save_dir,face_location_map,F_list,avg_map)
-
-def _make_all_face(config):
-    r'''py文件内部调用函数'''
+def get_feature(config):
     def extract_feature(model,img_paths):
         normMean = [0.49139968, 0.48215827, 0.44653124]
         normStd = [0.24703233, 0.24348505, 0.26158768]
@@ -273,73 +140,33 @@ def _make_all_face(config):
 
     extractor =DenseNet(growthRate=12, depth=100, reduction=0.5,bottleneck=True, nClasses=10,pre_train=True,device=device)
     all_utt_ids = get_all_utt_id(config)
-    feat_save_path = os.path.join(config['feature_root'], 'raw', "V", "raw_efficientface.h5")
+    data_root=os.path.join(config['trad_data_root'],'V/qp{}'.format(config['qp']))
+    feat_save_path = os.path.join(config['trad_feature_root'], "V/qp{}.h5".format(config['qp']))
     h5f = h5py.File(feat_save_path, 'w')
-    for utt_id in tqdm(all_utt_ids):
-        sess_id = utt_id[4]
-        face_dir = os.path.join(config['data_root'],'Session{}/face/{}'.format(sess_id,utt_id))
-        utt_face_pics = sorted(glob.glob(os.path.join(face_dir, '*.png')), key=lambda x: float(x.split('/')[-1].split('.png')[0]))
-        utt_feats = []
-        utt_start = []
-        utt_end = []
-        # 抓语义级别的帧
-        feat = extract_feature(extractor,utt_face_pics)
-        for i,pic_path in  enumerate(utt_face_pics):
-            timestamp = float(pic_path.split('/')[-1].split('.png')[0])
-            utt_feats.append(feat[i])
-            utt_start.append(timestamp)
-            utt_end.append(timestamp + time_step)
+    print('start getting feature')
+    for utt_id in all_utt_ids:
+        png_dir=os.path.join(data_root,utt_id)
+        utt_face_pics = sorted(glob.glob(os.path.join(png_dir, '*.png')), key=lambda x: float(os.path.basename(x).split('.png')[0]))
+        utt_feats = extract_feature(extractor,utt_face_pics) 
         utt_feats=[a.cpu().numpy() for a in utt_feats]
         if len(utt_feats) != 0:
             utt_feats = np.array(utt_feats)
-            utt_start = np.array(utt_start)
-            utt_end = np.array(utt_end)
         else:
             print('missing face')
             utt_feats = np.zeros([1, 342])
-            utt_start = np.array([-1])
-            utt_end = np.array([-1])
         # 对于Ses05F_script02_*.avi，男方视频是黑色的，直接认定模态遗失
         if 'Ses05F_script02_' in utt_id and utt_id[-4]=='M':
             print('{} missing video'.format(utt_id))
             utt_feats=np.zeros(utt_feats.shape)
-        utt_group = h5f.create_group(utt_id)
-        utt_group['feat'] = utt_feats
-        utt_group['start'] = utt_start
-        utt_group['end'] = utt_end
+        h5f[utt_id]=utt_feats
     h5f.close()
 
-def make_all_efficientface(config):
-    r'''供外部py文件的函数调用'''
-    data_root=config['data_root']
-    # get face pic
-    session_list=[1,2,3,4,5]
-    for session in session_list:
-        # session=5
-        video_dir=os.path.join(data_root,'Session{}/dialog/avi/DivX'.format(session))
-        video_file_list=os.listdir(video_dir)
-        for video_file in video_file_list:
-            # video_file='Ses05F_script02_2.avi'
-            if not video_file.endswith('.avi'):
-                continue
-            print('start get face: Session{} {}'.format(session,video_file))
-            name=video_file.split('.')[0]
-            video_to_png(os.path.join(video_dir,video_file),
-                os.path.join(data_root,'Session{}/face/tmp/{}'.format(session,name)))
-            png_dir=divide_png(os.path.join(data_root,'Session{}/face/tmp/{}'.format(session,name)),
-                os.path.join(data_root,'Session{}/dialog/transcriptions/{}.txt'.format(session,name)),
-                os.path.join(data_root,'Session{}/face/tmp'.format(session)))
-            face_locations_map={}
-            for abc in png_dir:
-                map2=crop_face(abc,os.path.join(data_root,'Session{}/face'.format(session)))
-                face_locations_map.update(map2)
-            deal_with_miss_face(os.path.join(data_root,'Session{}/face/tmp'.format(session)),
-                os.path.join(data_root,'Session{}/face'.format(session)),
-                face_locations_map)
-            shutil.rmtree(os.path.join(data_root,'Session{}/face/tmp'.format(session)))
+    pass
 
-    # make raw feat record with timestamp
-    _make_all_face(config)
+def make_all_face(config):
+    r'''供外部py文件的函数调用'''
+    encode_and_decode(config)
+    get_feature(config)
 
 if __name__ == '__main__':
     # load config
@@ -350,37 +177,12 @@ if __name__ == '__main__':
     # 添加传统编解码qp信息
     config['qp']=56
     # 创建文件夹
-    save_dir = os.path.join(config['feature_root'], 'raw')
-    for modality in ['A', 'V', 'L']:
-        modality_dir = os.path.join(save_dir, modality)
-        if not os.path.exists(modality_dir):
-            os.makedirs(modality_dir)
-    data_root=config['data_root']
-    # get face pic
-    session_list=[1,2,3,4,5]
-    # session_list=[5]
-    # for session in session_list:
-    #     video_dir=os.path.join(data_root,'Session{}/dialog/avi/DivX'.format(session))
-    #     video_file_list=os.listdir(video_dir)
-    #     for video_file in video_file_list:
-    #         # video_file='Ses05F_script02_2.avi'
-    #         if not video_file.endswith('.avi'):
-    #             continue
-    #         print('start get face: Session{} {}'.format(session,video_file))
-    #         name=video_file.split('.')[0]
-    #         video_to_png(os.path.join(video_dir,video_file),
-    #             os.path.join(data_root,'Session{}/face/tmp/{}'.format(session,name)))
-    #         png_dir=divide_png(os.path.join(data_root,'Session{}/face/tmp/{}'.format(session,name)),
-    #             os.path.join(data_root,'Session{}/dialog/transcriptions/{}.txt'.format(session,name)),
-    #             os.path.join(data_root,'Session{}/face/tmp'.format(session)))
-    #         face_locations_map={}
-    #         for abc in png_dir:
-    #             map2=crop_face(abc,os.path.join(data_root,'Session{}/face'.format(session)))
-    #             face_locations_map.update(map2)
-    #         deal_with_miss_face(os.path.join(data_root,'Session{}/face/tmp'.format(session)),
-    #             os.path.join(data_root,'Session{}/face'.format(session)),
-    #             face_locations_map)
-    #         shutil.rmtree(os.path.join(data_root,'Session{}/face/tmp'.format(session)))
+    save_dir_list = [os.path.join(config['trad_feature_root'], 'raw'),
+        config['trad_data_root'],'trad_result']
+    for save_dir in save_dir_list:
+        for modality in ['A', 'V', 'L']:
+            modality_dir = os.path.join(save_dir, modality)
+            if not os.path.exists(modality_dir):
+                os.makedirs(modality_dir)
 
-    # make raw feat record with timestamp
-    _make_all_face(config)
+    make_all_face()

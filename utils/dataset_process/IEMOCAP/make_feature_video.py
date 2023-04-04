@@ -159,6 +159,8 @@ def deal_with_miss_face(png_dir,save_dir,face_location_map):
     如果在相同文件夹有照片, 则用该文件夹内所有照片的坐标均值做坐标
     如果文件夹内没有照片, 就用邻近文件夹的所有照片的坐标均值做坐标
     '''
+    # 需要进行人脸检测, 放在外面会报runtime错误
+    import face_recognition
     def get_dir_avg(face_location_map):
         avg_map={}
         for key1 in face_location_map:
@@ -254,6 +256,8 @@ def _make_all_face(config):
         model.eval()
         with torch.no_grad():
             out=model(clip)
+        if len(out.shape)==1:
+            out=out.unsqueeze(0)
         return out 
 
     extractor =DenseNet(growthRate=12, depth=100, reduction=0.5,bottleneck=True, nClasses=10,pre_train=True,device=device)
@@ -341,29 +345,29 @@ if __name__ == '__main__':
     data_root=config['data_root']
     # get face pic
     session_list=[1,2,3,4,5]
-    # session_list=[5]
-    for session in session_list:
-        video_dir=os.path.join(data_root,'Session{}/dialog/avi/DivX'.format(session))
-        video_file_list=os.listdir(video_dir)
-        for video_file in video_file_list:
-            # video_file='Ses05F_script02_2.avi'
-            if not video_file.endswith('.avi'):
-                continue
-            print('start get face: Session{} {}'.format(session,video_file))
-            name=video_file.split('.')[0]
-            video_to_png(os.path.join(video_dir,video_file),
-                os.path.join(data_root,'Session{}/face/tmp/{}'.format(session,name)))
-            png_dir=divide_png(os.path.join(data_root,'Session{}/face/tmp/{}'.format(session,name)),
-                os.path.join(data_root,'Session{}/dialog/transcriptions/{}.txt'.format(session,name)),
-                os.path.join(data_root,'Session{}/face/tmp'.format(session)))
-            face_locations_map={}
-            for abc in png_dir:
-                map2=crop_face(abc,os.path.join(data_root,'Session{}/face'.format(session)))
-                face_locations_map.update(map2)
-            deal_with_miss_face(os.path.join(data_root,'Session{}/face/tmp'.format(session)),
-                os.path.join(data_root,'Session{}/face'.format(session)),
-                face_locations_map)
-            shutil.rmtree(os.path.join(data_root,'Session{}/face/tmp'.format(session)))
+    # session_list=[3]
+    # for session in session_list:
+    #     video_dir=os.path.join(data_root,'Session{}/dialog/avi/DivX'.format(session))
+    #     video_file_list=os.listdir(video_dir)
+    #     for video_file in video_file_list:
+    #         # video_file='Ses03M_impro07.avi'
+    #         if not video_file.endswith('.avi'):
+    #             continue
+    #         print('start get face: Session{} {}'.format(session,video_file))
+    #         name=video_file.split('.')[0]
+    #         video_to_png(os.path.join(video_dir,video_file),
+    #             os.path.join(data_root,'Session{}/face/tmp/{}'.format(session,name)))
+    #         png_dir=divide_png(os.path.join(data_root,'Session{}/face/tmp/{}'.format(session,name)),
+    #             os.path.join(data_root,'Session{}/dialog/transcriptions/{}.txt'.format(session,name)),
+    #             os.path.join(data_root,'Session{}/face/tmp'.format(session)))
+    #         face_locations_map={}
+    #         for abc in png_dir:
+    #             map2=crop_face(abc,os.path.join(data_root,'Session{}/face'.format(session)))
+    #             face_locations_map.update(map2)
+    #         deal_with_miss_face(os.path.join(data_root,'Session{}/face/tmp'.format(session)),
+    #             os.path.join(data_root,'Session{}/face'.format(session)),
+    #             face_locations_map)
+    #         shutil.rmtree(os.path.join(data_root,'Session{}/face/tmp'.format(session)))
 
     # make raw feat record with timestamp
     _make_all_face(config)

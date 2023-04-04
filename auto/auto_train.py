@@ -9,7 +9,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag,type):
         'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
         'compress_flag':compress_flag,'save_compress_pic':True,
         'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':128,
-        'input_dim_v':1024}
+        'input_dim_v':342}
     
     
     # if os.path.exists(args_dict['checkpoints_dir']):

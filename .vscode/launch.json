@@ -64,7 +64,7 @@
         "--embd_method_a","maxpool",
 
         "--V_type","efficientface",
-        "--input_dim_v","1024", 
+        "--input_dim_v","342", 
         "--embd_method_v","maxpool",
 
         "--L_type","bert_large", 
