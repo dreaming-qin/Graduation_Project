@@ -41,7 +41,7 @@ def read_file(file_name):
 
 def make_all_bert(config):
     # from debug import show_wdseg, show_sentence
-    extractor = BertExtractor(cuda=True, cuda_num=0)
+    extractor = BertExtractor(cuda=True, cuda_num=1)
     word_info_dir = os.path.join(config['data_root'], 'Session{}/dialog/transcriptions/{}.txt')
     all_utt_ids = get_all_utt_id(config)
     feat_save_path = os.path.join(config['feature_root'], 'raw', "L", "raw_bert.h5")

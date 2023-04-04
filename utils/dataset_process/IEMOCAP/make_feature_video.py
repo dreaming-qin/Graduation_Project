@@ -3,12 +3,12 @@ import cv2
 import os
 import numpy as np
 import matplotlib.pyplot as plt 
-import face_recognition
 import json
 import h5py
 from tqdm import tqdm
 import glob
 import torch
+import torchvision.transforms as transforms
 from PIL import Image
 
 import sys
@@ -18,11 +18,10 @@ for _ in range(4):
 sys.path.append(current_directory)
 
 
-from utils.dataset_process.tools.efficient_face.model import EfficientFaceTemporal
-from  utils.dataset_process.tools.efficient_face import transforms
+from utils.dataset_process.tools.densenet import DenseNet
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 time_step=0.1
 
 def makedirs(dir):
@@ -122,6 +121,8 @@ def divide_png(png_dir,transcriptions_txt,save_dir):
 def crop_face(png_dir,save_dir):
     r'''会存到{save_dir}/{os.path.basename(png_dir)}那
     '''
+    # 需要进行人脸检测, 放在外面会报runtime错误
+    import face_recognition
     save_dir=os.path.join(save_dir,os.path.basename(png_dir))
     makedirs(save_dir)
 
@@ -233,16 +234,21 @@ def get_trn_val_tst(target_root_dir, cv, setname):
     assert len(int2name) == len(int2label)
     return int2name, int2label
 
-def make_all_face(config):
+def _make_all_face(config):
+    r'''函数内部调用'''
     def extract_feature(model,img_paths):
-        video_transform = transforms.Compose([
-                    transforms.ToTensor(255)])
-        video_transform.randomize_parameters()
+        normMean = [0.49139968, 0.48215827, 0.44653124]
+        normStd = [0.24703233, 0.24348505, 0.26158768]
+        normTransform = transforms.Normalize(normMean, normStd)
+        video_transform= transforms.Compose([
+            transforms.Resize((64,64)),
+            transforms.ToTensor(),
+            normTransform
+        ])
         clip=[]
         model=model.to(device)
         for img_path in img_paths:
             img=Image.open(img_path).convert('RGB')
-            img=img.resize((224,224))
             clip.append(video_transform(img))
         clip = torch.stack(clip, 0).to(device)
         model.eval()
@@ -250,7 +256,7 @@ def make_all_face(config):
             out=model(clip)
         return out 
 
-    extractor =EfficientFaceTemporal([4, 8, 4], [29, 116, 232, 464, 1024]).to(device)
+    extractor =DenseNet(growthRate=12, depth=100, reduction=0.5,bottleneck=True, nClasses=10,pre_train=True,device=device)
     all_utt_ids = get_all_utt_id(config)
     feat_save_path = os.path.join(config['feature_root'], 'raw', "V", "raw_efficientface.h5")
     h5f = h5py.File(feat_save_path, 'w')
@@ -275,7 +281,7 @@ def make_all_face(config):
             utt_end = np.array(utt_end)
         else:
             print('missing face')
-            utt_feats = np.zeros([1, 1024])
+            utt_feats = np.zeros([1, 342])
             utt_start = np.array([-1])
             utt_end = np.array([-1])
         # 对于Ses05F_script02_*.avi，男方视频是黑色的，直接认定模态遗失
@@ -289,6 +295,7 @@ def make_all_face(config):
     h5f.close()
 
 def make_all_efficientface(config):
+    r'''供外部函数调用'''
     data_root=config['data_root']
     # get face pic
     session_list=[1,2,3,4,5]
@@ -317,7 +324,7 @@ def make_all_efficientface(config):
             shutil.rmtree(os.path.join(data_root,'Session{}/face/tmp'.format(session)))
 
     # make raw feat record with timestamp
-    make_all_face(config)
+    _make_all_face(config)
 
 if __name__ == '__main__':
     # load config
@@ -359,4 +366,4 @@ if __name__ == '__main__':
             shutil.rmtree(os.path.join(data_root,'Session{}/face/tmp'.format(session)))
 
     # make raw feat record with timestamp
-    make_all_efficientface(config)
+    _make_all_face(config)
