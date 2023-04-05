@@ -3,7 +3,7 @@ import os
 import numpy as np
 import json
 import h5py
-from tqdm import tqdm
+from multiprocessing import Pool,cpu_count
 import glob
 import torch
 import torchvision.transforms as transforms
@@ -48,6 +48,35 @@ def get_trn_val_tst(target_root_dir, cv, setname):
 
 def encode_and_decode(config):
     r'''在这里实现encode和decode'''
+    def divide_utt_id(id_list,divide_cnt):
+        return [id_list[i:i + divide_cnt] for i in range(0, len(id_list), divide_cnt)]
+    
+    all_utt_ids = get_all_utt_id(config)
+    print('start encoding and decoding')
+
+    # 使用多进程方式进行编解码
+    thread_cnt=config['thread']
+    all_utt_ids=divide_utt_id(all_utt_ids,len(all_utt_ids)//thread_cnt+1)
+    p = Pool(min(thread_cnt,cpu_count()))
+    for i in range(thread_cnt):
+        p.apply_async(_thread_encode_and_decode, args=[config,all_utt_ids[i],i+1])
+    print('wait for all threads done...')
+    p.close()
+    p.join()
+
+    print('thread is finished, start merging result')
+    # 整合所有结果
+    save_dir='./trad_result/V'
+    lines='name,size(Byte)\n'
+    for txt_file in os.listdir(save_dir):
+        if txt_file.startswith('qp{}'.format(config['qp'])):
+            with open(os.path.join(save_dir,txt_file),'r') as f:
+                lines+=f.readlines()
+            os.remove(os.path.join(save_dir,txt_file))
+    with open('./trad_result/V/qp{}_size.txt'.format(config['qp']),'w') as f:
+        f.writelines(lines)
+
+def _thread_encode_and_decode(config,utt_id_list,index):
     def encode(png_dir,VVCdir):
         r'''png_dir是裁剪好的脸部png图片
         png图片序列-> yuv
@@ -55,7 +84,7 @@ def encode_and_decode(config):
         2.使用命令行运行EncoderAppStaticd'''
         # 对第一步, 由于face中的命名问题需要创建一个新的文件夹来复制图片并重命名图片使其符合ffmpeg要求
         # 命名格式是: 0.1000.png -> 0001.png
-        tmp_dir='./tmp'
+        tmp_dir='./tmp{}'.format(index)
         makedirs(tmp_dir)
         for png_file in os.listdir(png_dir):
             cnt=int(float(png_file.split('.png')[0])*10)
@@ -97,19 +126,17 @@ def encode_and_decode(config):
         os.system(command)
         shutil.copyfile(os.path.join(VVCdir,'output.yuv'),os.path.join(save_png_dir,'output.yuv'))
         # 第二步: 将yuv变为png图片序列
-        command = "cd {} && ffmpeg -s 64x64 -pix_fmt yuv420p10le -i output.yuv %4d.png".format(
+        command = "cd {} && ffmpeg -s 64x64 -pix_fmt yuv420p10le -y -i output.yuv %4d.png".format(
                 save_png_dir)
         os.system(command)
         return
     
-    all_utt_ids = get_all_utt_id(config)
-    print('start encoding and decoding')
-    for utt_id in tqdm(all_utt_ids):
+    for utt_id in utt_id_list:
         session = utt_id[4]
         png_dir=os.path.join(config['data_root'],'Session{}/face/{}'.format(session,utt_id))
-        VVCdir='./VVCSoftware_VTM-VTM-15.0/encode_video_demo'
+        VVCdir='./VVCSoftware_VTM-VTM-15.0/encode_video_demo{}'.format(index)
         encode(png_dir,VVCdir)
-        save_file='./trad_result/V/qp{}.txt'.format(config['qp'])
+        save_file='./trad_result/V/qp{}_index{}.txt'.format(config['qp'],index)
         get_result(utt_id,VVCdir,save_file)
         save_png_dir=os.path.join(config['trad_data_root'],'V/qp{}/{}'.format(config['qp'],utt_id))
         decode(VVCdir,save_png_dir)
@@ -173,6 +200,8 @@ if __name__ == '__main__':
     pwd = os.path.dirname(pwd)
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
+    # 添加多进程信息
+    config['thread']=10
     # 创建文件夹
     save_dir_list = [config['trad_feature_root'],config['trad_data_root'],'trad_result']
     for save_dir in save_dir_list:

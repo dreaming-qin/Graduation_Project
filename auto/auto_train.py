@@ -78,4 +78,4 @@ def auto_train_CAP(exp_No,gpu,compress_flag,type):
     os.system('cd feat_result/{}/ && rm -rf */*/*.npy */*/*.pth'.format(type))
 
 if __name__ =='__main__':
-    auto_train_CAP(exp_No=0,gpu=1,compress_flag=False,type='ours')
+    auto_train_CAP(exp_No=2,gpu=0,compress_flag=False,type='ours')

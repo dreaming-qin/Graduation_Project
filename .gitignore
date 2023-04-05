@@ -21,7 +21,8 @@ logs/
 feat_result/
 trad_result/
 VVCSoftware_VTM-VTM-15.0/
-log.log
+tmp/
+*.log
 *.tar
 
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`

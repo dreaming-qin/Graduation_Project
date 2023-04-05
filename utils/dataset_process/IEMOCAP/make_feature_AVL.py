@@ -100,11 +100,11 @@ if __name__ == '__main__':
             if not os.path.exists(modality_dir):
                 os.makedirs(modality_dir)
 
-    # text
-    make_all_bert(config)
-    # audio
-    make_all_openSMILE(config)
-    # video
+    # # text
+    # make_all_bert(config)
+    # # audio
+    # make_all_openSMILE(config)
+    # # video
     # make_all_efficientface(config)
 
     # format_data

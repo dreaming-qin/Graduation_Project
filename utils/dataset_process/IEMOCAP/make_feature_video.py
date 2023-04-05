@@ -8,6 +8,7 @@ import h5py
 from tqdm import tqdm
 import glob
 import torch
+import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
 
@@ -258,6 +259,12 @@ def _make_all_face(config):
             out=model(clip)
         if len(out.shape)==1:
             out=out.unsqueeze(0)
+        # 将尺寸小于50的特征规整为(50,feature size)
+        if out.shape[0]<50:
+            pad = nn.ZeroPad2d(padding=(0, 0, 0, 50-out.shape[0]))
+            out = pad(out)
+        # else:
+        #     out = out[:50, :]
         return out 
 
     extractor =DenseNet(growthRate=12, depth=100, reduction=0.5,bottleneck=True, nClasses=10,pre_train=True,device=device)
@@ -269,33 +276,20 @@ def _make_all_face(config):
         face_dir = os.path.join(config['data_root'],'Session{}/face/{}'.format(sess_id,utt_id))
         utt_face_pics = sorted(glob.glob(os.path.join(face_dir, '*.png')), key=lambda x: float(x.split('/')[-1].split('.png')[0]))
         utt_feats = []
-        utt_start = []
-        utt_end = []
         # 抓语义级别的帧
         feat = extract_feature(extractor,utt_face_pics)
-        for i,pic_path in  enumerate(utt_face_pics):
-            timestamp = float(pic_path.split('/')[-1].split('.png')[0])
-            utt_feats.append(feat[i])
-            utt_start.append(timestamp)
-            utt_end.append(timestamp + time_step)
-        utt_feats=[a.cpu().numpy() for a in utt_feats]
+        utt_feats=[a.cpu().numpy() for a in feat]
         if len(utt_feats) != 0:
             utt_feats = np.array(utt_feats)
-            utt_start = np.array(utt_start)
-            utt_end = np.array(utt_end)
         else:
             print('missing face')
             utt_feats = np.zeros([1, 342])
-            utt_start = np.array([-1])
-            utt_end = np.array([-1])
         # 对于Ses05F_script02_*.avi，男方视频是黑色的，直接认定模态遗失
         if 'Ses05F_script02_' in utt_id and utt_id[-4]=='M':
             print('{} missing video'.format(utt_id))
             utt_feats=np.zeros(utt_feats.shape)
         utt_group = h5f.create_group(utt_id)
         utt_group['feat'] = utt_feats
-        utt_group['start'] = utt_start
-        utt_group['end'] = utt_end
     h5f.close()
 
 def make_all_efficientface(config):
