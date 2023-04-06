@@ -6,8 +6,11 @@ import h5py
 from multiprocessing import Pool,cpu_count
 import glob
 import torch
+import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
+from tqdm import tqdm
+
 
 import sys
 current_directory = os.path.abspath(__file__)
@@ -19,7 +22,7 @@ sys.path.append(current_directory)
 from utils.dataset_process.tools.densenet import DenseNet
 
 r'''获得视频传统编解码的数据库, 编解码信息, 对应的raw feature特征
-首先需要运行make_feature_video.py获得需要的脸部图片, 需要完成以下步骤
+首先需要运行make_feature_video.py获得需要的脸部图片, 该函数可以完成以下步骤
 1. 先获得传统编解码后的数据集, 在这过程中获得需要传输的数据大小
 2.抓取rawfeature特征'''
 
@@ -67,14 +70,17 @@ def encode_and_decode(config):
     print('thread is finished, start merging result')
     # 整合所有结果
     save_dir='./trad_result/V'
-    lines='name,size(Byte)\n'
+    lines=['name,size(Byte)\n']
     for txt_file in os.listdir(save_dir):
-        if txt_file.startswith('qp{}'.format(config['qp'])):
+        if txt_file.startswith('qp{}_index'.format(config['qp'])):
             with open(os.path.join(save_dir,txt_file),'r') as f:
-                lines+=f.readlines()
-            os.remove(os.path.join(save_dir,txt_file))
+                lines2=f.readlines()
+            lines.extend(lines2)
     with open('./trad_result/V/qp{}_size.txt'.format(config['qp']),'w') as f:
         f.writelines(lines)
+    for txt_file in os.listdir(save_dir):
+        if txt_file.startswith('qp{}_index'.format(config['qp'])):
+            os.remove(os.path.join(save_dir,txt_file))
 
 def _thread_encode_and_decode(config,utt_id_list,index):
     def encode(png_dir,VVCdir):
@@ -164,6 +170,10 @@ def get_feature(config):
             out=model(clip)
         if len(out.shape)==1:
             out=out.unsqueeze(0)
+        # 将尺寸小于50的特征规整为(50,feature size)
+        if out.shape[0]<50:
+            pad = nn.ZeroPad2d(padding=(0, 0, 0, 50-out.shape[0]))
+            out = pad(out)
         return out 
 
     extractor =DenseNet(growthRate=12, depth=100, reduction=0.5,bottleneck=True, nClasses=10,pre_train=True,device=device)
@@ -172,16 +182,20 @@ def get_feature(config):
     feat_save_path = os.path.join(config['trad_feature_root'], "V/qp{}.h5".format(config['qp']))
     h5f = h5py.File(feat_save_path, 'w')
     print('start getting feature')
-    for utt_id in all_utt_ids:
+    video_dim=342
+    for utt_id in tqdm(all_utt_ids):
         png_dir=os.path.join(data_root,utt_id)
         utt_face_pics = sorted(glob.glob(os.path.join(png_dir, '*.png')), key=lambda x: float(os.path.basename(x).split('.png')[0]))
-        utt_feats = extract_feature(extractor,utt_face_pics) 
+        if len(utt_face_pics)!=0:
+            utt_feats = extract_feature(extractor,utt_face_pics)
+        else:
+            utt_feats=[] 
         utt_feats=[a.cpu().numpy() for a in utt_feats]
         if len(utt_feats) != 0:
             utt_feats = np.array(utt_feats)
         else:
-            print('missing face')
-            utt_feats = np.zeros([1, 342])
+            print('{} missing face'.format(utt_id))
+            utt_feats = np.zeros([50, video_dim])
         # 对于Ses05F_script02_*.avi，男方视频是黑色的，直接认定模态遗失
         if 'Ses05F_script02_' in utt_id and utt_id[-4]=='M':
             print('{} missing video'.format(utt_id))
@@ -201,7 +215,7 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 添加多进程信息
-    config['thread']=10
+    config['thread']=13
     # 创建文件夹
     save_dir_list = [config['trad_feature_root'],config['trad_data_root'],'trad_result']
     for save_dir in save_dir_list:
@@ -210,7 +224,7 @@ if __name__ == '__main__':
             if not os.path.exists(modality_dir):
                 os.makedirs(modality_dir)
     
-    qp_list=[56,54,55,40,39,38]
+    qp_list=[55,54,40,39,38]
     for qp in qp_list:
         # 添加传统编解码qp信息
         config['qp']=qp

@@ -6,7 +6,20 @@ import pandas as pd
 import scipy.signal as spsig
 from tqdm import tqdm
 import shutil
+import subprocess
 
+
+cmd = 'opusenc --cvbr --bitrate 2 ../dataset/IEMOCAP_full_release/Session2/sentences/wav/Ses02F_script03_1/Ses02F_script03_1_M001.wav ./tmp/input.opus'
+lines=subprocess.getstatusoutput(cmd)[1]
+lines=lines.split('\n')
+for line in lines:
+    line=line.strip()
+    if line.startswith('Bitrate'):
+        s_i=line.find('Bitrate')+9
+        e_i=line.find('kbit')
+        kbps=float(line[s_i:e_i])
+print(kbps)
+a=1
 
 class OpenSMILEExtractor(object):
     ''' 抽取comparE特征, 输入音频路径, 输出npy数组, 每帧130d
@@ -26,10 +39,10 @@ class OpenSMILEExtractor(object):
     def __call__(self, wav):
         basename = os.path.basename(wav).split('.')[0]
         save_path = os.path.join(self.tmp_dir, basename+".csv")
-        cmd = 'SMILExtract -C {}/config/compare16/ComParE_2016.conf \
+        cmd = '{}/build/progsrc/smilextract/SMILExtract -C {}/config/compare16/ComParE_2016.conf \
             -appendcsvlld 0 -timestampcsvlld 1 -headercsvlld 1 \
             -I {} -lldcsvoutput {} -instname xx -O ? -noconsoleoutput 1'.format(
-            self.opensmile_tool_dir, wav, save_path)
+            self.opensmile_tool_dir,self.opensmile_tool_dir, wav, save_path)
         # print(cmd)
         os.system(cmd)
         
@@ -45,6 +58,9 @@ class OpenSMILEExtractor(object):
 
         return wav_data
 
+def makedirs(dir):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
 
 def get_trn_val_tst(target_root_dir, cv, setname):
     int2name = np.load(os.path.join(target_root_dir, str(cv), '{}_int2name.npy'.format(setname)))
@@ -62,24 +78,7 @@ def get_all_utt_id(config):
     all_utt_ids = trn_int2name + val_int2name + tst_int2name
     return all_utt_ids
 
-
-def make_all_comparE(config):
-    extractor = OpenSMILEExtractor(opensmile_tool_dir='/root/opensmile',
-        tmp_dir=os.path.join(config['feature_root'],'openSMILEfeature'),
-        no_tmp=True)
-    all_utt_ids = get_all_utt_id(config)
-    all_h5f = h5py.File(os.path.join(config['feature_root'], 'raw','A', 'comparE.h5'), 'w')
-    for utt_id in tqdm(all_utt_ids):
-        ses_id = utt_id[4]
-        dialog_id = '_'.join(utt_id.split('_')[:-1])
-        wav_path = os.path.join(config['data_root'], f'Session{ses_id}', 'sentences', 'wav', f'{dialog_id}', f'{utt_id}.wav')
-        feat = extractor(wav_path)
-        all_h5f[utt_id] = feat
-    all_h5f.close()
-
-def normlize_on_trn(config):
-    input_file=os.path.join(config['feature_root'], 'raw','A', 'comparE.h5')
-    output_file=os.path.join(config['feature_root'],'raw', 'A', 'raw_comparE_mean_std.h5')
+def normlize_on_trn(config,input_file,output_file):
     h5f = h5py.File(output_file, 'w')
     in_data = h5py.File(input_file, 'r')
     for cv in range(1, 11):
@@ -98,49 +97,86 @@ def normlize_on_trn(config):
         print("std:", np.sum(std_f))
     h5f.close()
 
-def load_A(config):
-    feat_path = os.path.join(config['feature_root'], 'raw','A', "raw_comparE.h5")
-    feat = h5py.File(feat_path, 'r')
-    meta_path = os.path.join(config['feature_root'], 'raw','A', "raw_comparE_mean_std.h5")
-    mean_std = h5py.File(meta_path, 'r')
-    return feat, mean_std
+def encode_and_decode(config):
+    r'''在这里实现encode和decode
+    '''
 
-def make_openSMILE(config):
-    feat, _ = load_A(config)
+    def encode(wav_file):
+        r'''wav_file是输入文件
+        wav文件-> opus文件
+        返回执行command后的输出, 用于后续获得result'''
+        # 对第一步, 由于face中的命名问题需要创建一个新的文件夹来复制图片并重命名图片使其符合ffmpeg要求
+        # 命名格式是: 0.1000.png -> 0001.png
+        tmp_dir='./tmp'
+        makedirs(tmp_dir)
+
+        cmd = "opusenc --bitrate {} {} {}".format(config['kbps'],wav_file, os.path.join(tmp_dir,'input.opus')) 
+        lines=subprocess.getstatusoutput(cmd)[1]
+        return lines
+        
+    def get_result(utt_id,lines,save_file):
+        r'''从lines中获得结果并以append的形式追加到save_file中
+        '''
+        lines=lines.split('\n')
+        for line in lines:
+            line=line.strip()
+            if line.startswith('Overhead'):
+                s_i=line.find('Overhead')+9
+                e_i=line.find('%')
+                overhead=float(line[s_i:e_i])
+            if line.startswith('Wrote'):
+                s_i=line.find('Wrote')+6
+                e_i=line.find('bytes')
+                byte=int(line[s_i:e_i])
+        size=round(byte*(1-overhead/100))
+        
+        makedirs(os.path.dirname(save_file))
+        with open(save_file,'a') as f:
+            f.writelines('{},{}\n'.format(utt_id,size))
+        return
+
+    def decode(save_file):
+        makedirs(os.path.dirname(save_file))
+        tmp_dir='./tmp'
+        command = 'opusdec {} {}'.format(os.path.join(tmp_dir,'input.opus'),save_file)
+        os.system(command)
+        shutil.rmtree(tmp_dir)
+        return
     
-    # mean_std file copy
-    # mean_std_src = os.path.join(config['feature_root'], 'raw','A', "raw_comparE_mean_std.h5")
-    # mean_std_tgt = os.path.join(config['feature_root'], 'raw', "A", "comparE_mean_std.h5")
-    # shutil.copyfile(mean_std_src, mean_std_tgt)
-    # process feat and record timestamp
-    feat_save_path = os.path.join(config['feature_root'], 'raw', "A", "raw_comparE.h5")
-    h5f = h5py.File(feat_save_path, 'w')
-    for utt_id in tqdm(feat.keys()):
-        utt_feat = feat[utt_id][()]
-        start = np.array([0.1 * x for x in range(len(utt_feat))])
-        end = start + 0.1
-        utt_group = h5f.create_group(utt_id)
-        utt_group['feat'] = feat[utt_id][()]
-        utt_group['start'] = start
-        utt_group['end'] = end
-    h5f.close()
-
-
-def make_all_openSMILE(config):
-    # make raw feat record with timestamp
-    make_all_comparE(config)
-    normlize_on_trn(config)
-    make_openSMILE(config)
-
-def get_result(config):
-    pass
-
-def get_dataset(config):
-    pass
+    save_file='./trad_result/A/kbps{}_size.txt'.format(config['kbps'])
+    with open(save_file,'w') as f:
+        f.writelines('name,size(Byte)\n')
+    all_utt_ids = get_all_utt_id(config)
+    print('start encoding and decoding')
+    for utt_id in all_utt_ids:
+        session = utt_id[4]
+        dialog_id = '_'.join(utt_id.split('_')[:-1])
+        wav_file=os.path.join(config['data_root'],'Session{}/sentences/wav/{}/{}.wav'.format(session,dialog_id,utt_id))
+        lines=encode(wav_file)
+        save_file='./trad_result/A/kbps{}_size.txt'.format(config['kbps'])
+        get_result(utt_id,lines,save_file)
+        save_file=os.path.join(config['trad_data_root'],'A/kbps{}/{}.wav'.format(config['kbps'],utt_id))
+        decode(save_file)
 
 def get_feature(config):
-    pass
+    print('start getting feature')
+    extractor = OpenSMILEExtractor(opensmile_tool_dir='/home/haojun/docker/opensmile-3.0.1',
+        tmp_dir=os.path.join(config['feature_root'],'openSMILEfeature'),
+        no_tmp=True)
+    all_utt_ids = get_all_utt_id(config)
+    all_h5f = h5py.File(os.path.join(config['trad_feature_root'],'A/kbps{}.h5'.format(config['kbps'])), 'w')
+    for utt_id in tqdm(all_utt_ids):
+        wav_path = os.path.join(config['trad_data_root'],'A/kbps{}/{}.wav'.format(config['kbps'],utt_id))
+        feat = extractor(wav_path)
+        all_h5f[utt_id] = feat
+    all_h5f.close()
+    normlize_on_trn(config,os.path.join(config['trad_feature_root'],'A/kbps{}.h5'.format(config['kbps'])),
+                    os.path.join(config['trad_feature_root'],'A/kbps{}_mean_std.h5'.format(config['kbps'])))
 
+def make_trad_audio(config):
+    r'''供外部py文件的函数调用'''
+    encode_and_decode(config)
+    get_feature(config)
 
 if __name__ == '__main__':
     pwd = os.path.abspath(__file__)
@@ -153,15 +189,7 @@ if __name__ == '__main__':
         modality_dir = os.path.join(save_dir, modality)
         if not os.path.exists(modality_dir):
             os.makedirs(modality_dir)
-    kbps_list=[10]
+    kbps_list=[2,3,5,7,9]
     for kbps in kbps_list:
         config['kbps']=kbps
-        # 1. 根据kbps生成数据集
-
-        # 2. 获取码率
-
-        # 3. 获得特征
-        # make raw feat record with timestamp
-        make_all_comparE(config)
-        normlize_on_trn(config)
-        make_openSMILE(config)
+        make_trad_audio(config)

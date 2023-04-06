@@ -15,7 +15,7 @@ for _ in range(4):
 sys.path.append(current_directory)
 
 r'''获得传统方法的文本kbps, 并获得相应特征
-除了数据集IEMOCAP, 需要有视频持续时间time.h5, 进行特征压缩时已经提取出的raw feature文件bert-large.h5 (即需要运行make_feature_text.py文件s)
+除了数据集IEMOCAP, 需要有视频持续时间time.h5, 进行特征压缩时已经提取出的raw feature文件bert-large.h5 (即需要运行make_feature_text.py文件)
 对数据集处理后会生成适用于传统方法的数据集在IEMOCAP_features_trad中, 对应特征在IEMOCAP_features_trad中,
 传统编码kbps结果在trad_result中
 '''
@@ -97,12 +97,9 @@ def make_all_bert(config):
         os.path.join(config['trad_feature_root'],'L/bert_large.h5'))
     word_info_dir = os.path.join(config['data_root'], 'Session{}/dialog/transcriptions/{}.txt')
     all_utt_ids = get_all_utt_id(config)
-    time_h5f=h5py.File(os.path.join(config['target_root'], 'time.h5'), 'r')
-    feat_save_path = os.path.join(config['trad_feature_root'], 'raw', "L", "raw_bert.h5")
-    h5f = h5py.File(feat_save_path, 'w')
     listed_set=set()
     all_set=set(all_utt_ids)
-    kbps_str='name,kbps\n'
+    size_str='name,size(Byte)\n'
     for utt_id in tqdm(all_utt_ids):
         if utt_id in listed_set:
             continue
@@ -118,12 +115,9 @@ def make_all_bert(config):
                     f.writelines(' '.join(value2))
                 # 计算哈夫曼编码后的大小
                 compressed_size = get_huffman_size(' '.join(value2))
-                sec=time_h5f[key2][()]
-                kbps=(compressed_size*8)/(1000*sec)
-                kbps_str+='{},{}\n'.format(key2,kbps)
-    h5f.close()
-    with open('./trad_result/L/kbps.txt','w') as f:
-        f.writelines(kbps_str)
+                size_str+='{},{}\n'.format(key2,compressed_size)
+    with open('./trad_result/L/filesize.txt','w') as f:
+        f.writelines(size_str)
 
 
 if __name__ == '__main__':
@@ -133,8 +127,7 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 创建文件夹
-    save_dir_list = [os.path.join(config['trad_feature_root'], 'raw'),
-        config['trad_data_root'],'trad_result']
+    save_dir_list = [config['trad_feature_root'],config['trad_data_root'],'trad_result']
     for save_dir in save_dir_list:
         for modality in ['A', 'V', 'L']:
             modality_dir = os.path.join(save_dir, modality)

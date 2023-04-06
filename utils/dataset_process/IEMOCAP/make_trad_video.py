@@ -105,6 +105,7 @@ def encode_and_decode(config):
     all_utt_ids = get_all_utt_id(config)
     print('start encoding and decoding')
     for utt_id in tqdm(all_utt_ids):
+        utt_id='Ses04F_impro08_F001'
         session = utt_id[4]
         png_dir=os.path.join(config['data_root'],'Session{}/face/{}'.format(session,utt_id))
         VVCdir='./VVCSoftware_VTM-VTM-15.0/encode_video_demo'
@@ -162,7 +163,7 @@ def get_feature(config):
         h5f[utt_id]=utt_feats
     h5f.close()
 
-def make_all_face(config):
+def make_trad_video(config):
     r'''供外部py文件的函数调用'''
     encode_and_decode(config)
     get_feature(config)
@@ -181,8 +182,8 @@ if __name__ == '__main__':
             if not os.path.exists(modality_dir):
                 os.makedirs(modality_dir)
     
-    qp_list=[56,54,55,40,39,38]
+    qp_list=[54,55,40,39,38]
     for qp in qp_list:
         # 添加传统编解码qp信息
         config['qp']=qp
-        make_all_face(config)
+        make_trad_video(config)
