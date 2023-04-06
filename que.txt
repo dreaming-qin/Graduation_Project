@@ -11,10 +11,6 @@
 编码端png转yuv: ffmpeg -s 64x64 -pix_fmt yuv420p -y -r 10 -i %4d.png input.yuv
 解码端yuv转png: ffmpeg -s 64x64 -pix_fmt yuv420p10le -y -i output.yuv %4d.png
 
-
-音频命令：ffmpeg -i 025.m4a  -ar 8000  -ac 1 -b:a 1k  -y out.aac 
-每次测试完需要删除trad_result, IEMOCAP_full_release_trad
-
 转为linux需要注意的：
 1.在launch.json中删掉最下面的参数
 2.在utils.logger.py 中的52行取消掉注释

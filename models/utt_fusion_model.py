@@ -117,21 +117,23 @@ class UttFusionModel(BaseModel):
         if 'L' in self.modality:
             self.feat_L = self.netL(self.lexical)
             final_embd.append(self.feat_L)
-
+        
         # get model outputs
         self.feat = torch.cat(final_embd, dim=-1)
         length,height=self.feat_compress_size[0],self.feat_compress_size[1]
-        self.feat_compress=self.feat.reshape(-1,3,length,height)
-        # 模拟量化误差
-        if self.isTrain:
-            self.feat=quantize_feature_train(self.feat)
-        else:
-            file_name='{:.4f}-{}'.format(self.time,str(uuid.uuid1()))
-            feature3D=save_compressed_feat(self.feat_compress,self.quality,
-                os.path.join(self.save_dir,'compressed_feat',str(self.quality)),file_name,
-                self.save_pic_flag)
-            _,h,w=feature3D.shape
-            self.feat=feature3D.reshape((-1,3*h*w))
+
+        if self.type=='feat':
+            self.feat_compress=self.feat.reshape(-1,3,length,height)
+            # 模拟量化误差
+            if self.isTrain:
+                self.feat=quantize_feature_train(self.feat)
+            else:
+                file_name='{:.4f}-{}'.format(self.time,str(uuid.uuid1()))
+                feature3D=save_compressed_feat(self.feat_compress,self.quality,
+                    os.path.join(self.save_dir,'compressed_feat',str(self.quality)),file_name,
+                    self.save_pic_flag)
+                _,h,w=feature3D.shape
+                self.feat=feature3D.reshape((-1,3*h*w))
 
         self.logits, self.ef_fusion_feat = self.netC(self.feat)
         self.pred = F.softmax(self.logits, dim=-1)

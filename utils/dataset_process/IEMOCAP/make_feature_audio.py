@@ -54,7 +54,7 @@ def get_trn_val_tst(target_root_dir, cv, setname):
 
 def make_all_comparE(config):
     extractor = OpenSMILEExtractor(opensmile_tool_dir='/home/haojun/docker/opensmile-3.0.1',
-        tmp_dir=os.path.join(config['feature_root'],'openSMILEfeature'),
+        tmp_dir=os.path.join(config['feat_feature_root'],'openSMILEfeature'),
         no_tmp=True)
     trn_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'trn')
     val_int2name, _ = get_trn_val_tst(config['target_root'], 1, 'val')
@@ -63,7 +63,7 @@ def make_all_comparE(config):
     val_int2name = list(map(lambda x: x[0].decode(), val_int2name))
     tst_int2name = list(map(lambda x: x[0].decode(), tst_int2name))
     all_utt_ids = trn_int2name + val_int2name + tst_int2name
-    all_h5f = h5py.File(os.path.join(config['feature_root'], 'raw','A', 'raw_comparE.h5'), 'w')
+    all_h5f = h5py.File(os.path.join(config['feat_feature_root'], 'raw','A', 'raw_comparE.h5'), 'w')
     for utt_id in tqdm(all_utt_ids):
         ses_id = utt_id[4]
         dialog_id = '_'.join(utt_id.split('_')[:-1])
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 创建文件夹
-    save_dir = os.path.join(config['feature_root'], 'raw')
+    save_dir = os.path.join(config['feat_feature_root'], 'raw')
     for modality in ['A', 'V', 'L']:
         modality_dir = os.path.join(save_dir, modality)
         if not os.path.exists(modality_dir):

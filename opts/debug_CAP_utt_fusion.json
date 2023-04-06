@@ -11,6 +11,7 @@
         // --modality=$modality 
         "--modality","AVL",
         "--save_compress_pic",
+        "--type","trad",
 
         // 路径相关
         "--log_dir","./logs",

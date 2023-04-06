@@ -44,7 +44,7 @@ def make_all_bert(config):
     extractor = BertExtractor(cuda=True, cuda_num=1)
     word_info_dir = os.path.join(config['data_root'], 'Session{}/dialog/transcriptions/{}.txt')
     all_utt_ids = get_all_utt_id(config)
-    feat_save_path = os.path.join(config['feature_root'], 'raw', "L", "raw_bert.h5")
+    feat_save_path = os.path.join(config['feat_feature_root'], 'raw', "L", "raw_bert.h5")
     h5f = h5py.File(feat_save_path, 'w')
     listed_set=set()
     all_set=set(all_utt_ids)
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 创建文件夹
-    save_dir = os.path.join(config['feature_root'], 'raw')
+    save_dir = os.path.join(config['feat_feature_root'], 'raw')
     for modality in ['A', 'V', 'L']:
         modality_dir = os.path.join(save_dir, modality)
         if not os.path.exists(modality_dir):

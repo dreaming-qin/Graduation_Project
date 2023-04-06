@@ -18,7 +18,8 @@ sys.path.append(current_directory)
 
 from utils.dataset_process.tools.densenet import DenseNet
 
-r'''获得视频传统编解码的数据库, 编解码信息, 对应的raw feature特征
+r'''已启用,请使用make_trad_video_thread.py
+获得视频传统编解码的数据库, 编解码信息, 对应的raw feature特征
 首先需要运行make_feature_video.py获得需要的脸部图片, 需要完成以下步骤
 1. 先获得传统编解码后的数据集, 在这过程中获得需要传输的数据大小
 2.抓取rawfeature特征'''

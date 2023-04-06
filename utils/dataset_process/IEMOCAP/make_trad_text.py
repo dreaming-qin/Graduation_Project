@@ -93,7 +93,7 @@ def make_all_bert(config):
     # 对于特征获得，text是无损压缩，直接搬之前的特征
     if not os.path.exists(os.path.join(config['trad_feature_root'],'L')):
         os.makedirs(os.path.join(config['trad_feature_root'],'L'))
-    shutil.copyfile(os.path.join(config['feature_root'],'L/bert_large.h5'),
+    shutil.copyfile(os.path.join(config['feat_feature_root'],'L/bert_large.h5'),
         os.path.join(config['trad_feature_root'],'L/bert_large.h5'))
     word_info_dir = os.path.join(config['data_root'], 'Session{}/dialog/transcriptions/{}.txt')
     all_utt_ids = get_all_utt_id(config)

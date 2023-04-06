@@ -2,33 +2,28 @@ import os
 import json
 import shutil
 
-def auto_train_CAP(exp_No,gpu,compress_flag,type):
+def auto_train_CAP(args_dict):
     utt_fusion_train=True
     mmin_train=True
     cv_iter=range(1,11)
-    args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':128,
-        'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
-        'compress_flag':compress_flag,'save_compress_pic':True,
-        'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':128,
-        'input_dim_v':342}
-    # 复制相应的raw feature
+    type=args_dict['type']
+    # 根据qp和kbps选择相应的raw feature
     # load config
     pwd = os.path.abspath(__file__)
     pwd = os.path.dirname(pwd)
     config_path = './data/config/IEMOCAP_config.json'
     config = json.load(open(config_path))
     # 选择视频raw feature
-    shutil.copyfile(os.path.join(config['feat_feature_root'],'V/efficientface.h5'),
+    shutil.copyfile(os.path.join(config['trad_feature_root'],'V/qp{}.h5'.format(args_dict['qp'])),
                     os.path.join(config['feature_root'],'V/efficientface.h5'))
     # 选择音频raw feature
-    shutil.copyfile(os.path.join(config['feat_feature_root'],'A/comparE.h5'),
+    shutil.copyfile(os.path.join(config['trad_feature_root'],'A/kbps{}.h5'.format(args_dict['kbps'])),
                     os.path.join(config['feature_root'],'A/comparE.h5'))
-    shutil.copyfile(os.path.join(config['feat_feature_root'],'A/comparE_mean_std.h5'),
+    shutil.copyfile(os.path.join(config['trad_feature_root'],'A/kbps{}_mean_std.h5'.format(args_dict['kbps'])),
                     os.path.join(config['feature_root'],'A/comparE_mean_std.h5'))
     # 选择文本raw feature
-    shutil.copyfile(os.path.join(config['feat_feature_root'],'L/bert_large.h5'),
+    shutil.copyfile(os.path.join(config['trad_feature_root'],'L/bert_large.h5'.format(args_dict['kbps'])),
                     os.path.join(config['feature_root'],'L/bert_large.h5'))
-    
     
     # if os.path.exists(args_dict['checkpoints_dir']):
     #     shutil.rmtree(args_dict['checkpoints_dir'])
@@ -46,7 +41,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag,type):
         ' --batch_size={0[batch_size]} --lr=2e-4 --run_idx={0[run_idx]}'
         ' --name=CAP_utt_fusion --suffix=AVL_run{0[run_idx]}' 
         ' --has_test --cvNo={0[cvNo]} --feat_compress_size={0[feat_compress_size]}'
-        ' --quality={0[quality]} --type feat --has_test')
+        ' --quality={0[quality]} --type trad --has_test')
     
     mmin_cmd=('python train_mmin.py --dataset_mode=multimodal_miss --model=mmin'
         ' --log_dir={0[log_dir]} --checkpoints_dir={0[checkpoints_dir]} --gpu_ids={0[gpu_ids]}'
@@ -60,7 +55,7 @@ def auto_train_CAP(exp_No,gpu,compress_flag,type):
         ' --batch_size={0[batch_size]} --lr=2e-4 --run_idx={0[run_idx]} --weight_decay=1e-5'
         ' --name=mmin_IEMOCAP --suffix=block_{0[n_blocks]}_run{0[run_idx]} --has_test'
         ' --cvNo={0[cvNo]} --embd_size={0[embd_size]} --feat_compress_size={0[feat_compress_size]}'
-        ' --quality={0[quality]} --type feat --has_test')
+        ' --quality={0[quality]} --type trad --has_test')
     
     for i in cv_iter:
         if args_dict['compress_flag']:
@@ -86,14 +81,27 @@ def auto_train_CAP(exp_No,gpu,compress_flag,type):
             os.system(cmd)
     
     
-    os.makedirs('./feat_result/{}'.format(type),exist_ok=True)
+    os.makedirs('./trad_result/{}'.format(type),exist_ok=True)
     fusion_dir='CAP_utt_fusion_AVL_run{0[run_idx]}'.format(args_dict)
     mmin_dir='mmin_IEMOCAP_block_{0[n_blocks]}_run{0[run_idx]}'.format(args_dict)
-    os.system('cp -rf {0[log_dir]}/{1}/ feat_result/{2}/'.format(args_dict,fusion_dir,type))
-    os.system('cp -rf {0[log_dir]}/{1}/ feat_result/{2}/'.format(args_dict,mmin_dir,type))
-    os.system('cp -rf {0[checkpoints_dir]}/{1}/ feat_result/{2}/'.format(args_dict,fusion_dir,type))
-    os.system('cp -rf {0[checkpoints_dir]}/{1}/ feat_result/{2}/'.format(args_dict,mmin_dir,type))
-    os.system('cd feat_result/{}/ && rm -rf */*/*.npy */*/*.pth'.format(type))
+    os.system('cp -rf {0[log_dir]}/{1}/ trad_result/{2}/'.format(args_dict,fusion_dir,type))
+    os.system('cp -rf {0[log_dir]}/{1}/ trad_result/{2}/'.format(args_dict,mmin_dir,type))
+    os.system('cp -rf {0[checkpoints_dir]}/{1}/ trad_result/{2}/'.format(args_dict,fusion_dir,type))
+    os.system('cp -rf {0[checkpoints_dir]}/{1}/ trad_result/{2}/'.format(args_dict,mmin_dir,type))
+    os.system('cd trad_result/{}/ && rm -rf */*/*.npy */*/*.pth'.format(type))
 
 if __name__ =='__main__':
-    auto_train_CAP(exp_No=2,gpu=0,compress_flag=False,type='ours')
+    exp_No=0
+    gpu=1
+    compress_flag=False
+    type='trad'
+    # 视频选择
+    qp=56
+    # 音频选择
+    kbps=5
+    args_dict={'qp':qp,'kbps':kbps,'run_idx':exp_No,'gpu_ids':gpu,'type':type,'embd_size':128,
+        'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
+        'compress_flag':compress_flag,'save_compress_pic':True,
+        'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':128,
+        'input_dim_v':342}
+    auto_train_CAP(args_dict)

@@ -21,7 +21,8 @@ sys.path.append(current_directory)
 
 from utils.dataset_process.tools.densenet import DenseNet
 
-r'''获得视频传统编解码的数据库, 编解码信息, 对应的raw feature特征
+r'''make_trad_video.py的多线程版本,因为VTM实在是太慢了所以写了个多线程程序
+获得视频传统编解码的数据库, 编解码信息, 对应的raw feature特征
 首先需要运行make_feature_video.py获得需要的脸部图片, 该函数可以完成以下步骤
 1. 先获得传统编解码后的数据集, 在这过程中获得需要传输的数据大小
 2.抓取rawfeature特征'''
@@ -137,6 +138,10 @@ def _thread_encode_and_decode(config,utt_id_list,index):
         os.system(command)
         return
     
+    
+    save_file='./trad_result/V/qp{}_index{}.txt'.format(config['qp'],index)
+    with open(save_file,'w') as f:
+        a=1
     for utt_id in utt_id_list:
         session = utt_id[4]
         png_dir=os.path.join(config['data_root'],'Session{}/face/{}'.format(session,utt_id))
@@ -215,7 +220,7 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 添加多进程信息
-    config['thread']=13
+    config['thread']=7
     # 创建文件夹
     save_dir_list = [config['trad_feature_root'],config['trad_data_root'],'trad_result']
     for save_dir in save_dir_list:

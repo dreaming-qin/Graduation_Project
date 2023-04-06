@@ -235,23 +235,24 @@ class MMINModel(BaseModel):
         self.feat_L_miss = self.netL(self.L_miss)
         # fusion miss
         self.feat_fusion_miss = torch.cat([self.feat_A_miss, self.feat_V_miss, self.feat_L_miss], dim=-1)
-        # 模拟量化误差
-        if self.isTrain:
-            length,height=self.feat_compress_size[0],self.feat_compress_size[1]
-            self.feat_compress=self.feat_fusion_miss.reshape(-1,3,length,height)
-            self.feat_fusion_miss=quantize_feature_train(self.feat_fusion_miss)
-        else:
-            #测试阶段，首先移除遗失模态获得图片，遗失模态信息由云端重新获得，同时<在这>保存图片
-            # 0.获得已有模态h特征 1.保存图片 2.从图片获得h已有模态的特征
-            # 3.从后端获得遗失模态h特征 4.将h特征与遗失模态h特征进行融合
-            # 完成第0步
-            self.feat_compress=self.get_compressed_feat()
-            # 完成1,2步
-            pic_path=os.path.join(self.save_dir,'compressed_feat',str(self.quality),str(self.test_modality))
-            file_name='{:.4f}-{}'.format(self.time,str(uuid.uuid1()))
-            feature3D=save_compressed_feat(self.feat_compress,self.quality,pic_path,file_name,self.save_pic_flag)
-            # 完成3,4步
-            self.feat_fusion_miss=self.get_compressed_feat_cloud(feature3D)
+        if self.type=='feat':
+            # 模拟量化误差
+            if self.isTrain:
+                length,height=self.feat_compress_size[0],self.feat_compress_size[1]
+                self.feat_compress=self.feat_fusion_miss.reshape(-1,3,length,height)
+                self.feat_fusion_miss=quantize_feature_train(self.feat_fusion_miss)
+            else:
+                #测试阶段，首先移除遗失模态获得图片，遗失模态信息由云端重新获得，同时<在这>保存图片
+                # 0.获得已有模态h特征 1.保存图片 2.从图片获得h已有模态的特征
+                # 3.从后端获得遗失模态h特征 4.将h特征与遗失模态h特征进行融合
+                # 完成第0步
+                self.feat_compress=self.get_compressed_feat()
+                # 完成1,2步
+                pic_path=os.path.join(self.save_dir,'compressed_feat',str(self.quality),str(self.test_modality))
+                file_name='{:.4f}-{}'.format(self.time,str(uuid.uuid1()))
+                feature3D=save_compressed_feat(self.feat_compress,self.quality,pic_path,file_name,self.save_pic_flag)
+                # 完成3,4步
+                self.feat_fusion_miss=self.get_compressed_feat_cloud(feature3D)
             
 
         # calc reconstruction of teacher's output

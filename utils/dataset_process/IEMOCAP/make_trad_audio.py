@@ -161,7 +161,7 @@ def encode_and_decode(config):
 def get_feature(config):
     print('start getting feature')
     extractor = OpenSMILEExtractor(opensmile_tool_dir='/home/haojun/docker/opensmile-3.0.1',
-        tmp_dir=os.path.join(config['feature_root'],'openSMILEfeature'),
+        tmp_dir=os.path.join(config['feat_feature_root'],'openSMILEfeature'),
         no_tmp=True)
     all_utt_ids = get_all_utt_id(config)
     all_h5f = h5py.File(os.path.join(config['trad_feature_root'],'A/kbps{}.h5'.format(config['kbps'])), 'w')
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 创建文件夹
-    save_dir = os.path.join(config['feature_root'], 'raw')
+    save_dir = os.path.join(config['trad_feature_root'], 'raw')
     for modality in ['A', 'V', 'L']:
         modality_dir = os.path.join(save_dir, modality)
         if not os.path.exists(modality_dir):

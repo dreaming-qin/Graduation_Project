@@ -269,7 +269,7 @@ def _make_all_face(config):
 
     extractor =DenseNet(growthRate=12, depth=100, reduction=0.5,bottleneck=True, nClasses=10,pre_train=True,device=device)
     all_utt_ids = get_all_utt_id(config)
-    feat_save_path = os.path.join(config['feature_root'], 'raw', "V", "raw_efficientface.h5")
+    feat_save_path = os.path.join(config['feat_feature_root'], 'raw', "V", "raw_efficientface.h5")
     h5f = h5py.File(feat_save_path, 'w')
     for utt_id in tqdm(all_utt_ids):
         sess_id = utt_id[4]
@@ -331,7 +331,7 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 创建文件夹
-    save_dir = os.path.join(config['feature_root'], 'raw')
+    save_dir = os.path.join(config['feat_feature_root'], 'raw')
     for modality in ['A', 'V', 'L']:
         modality_dir = os.path.join(save_dir, modality)
         if not os.path.exists(modality_dir):
