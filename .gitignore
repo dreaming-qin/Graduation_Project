@@ -21,7 +21,7 @@ logs/
 feat_result/
 trad_result/
 VVCSoftware_VTM-VTM-15.0/
-tmp/
+tmp*/
 *.log
 *.tar
 
