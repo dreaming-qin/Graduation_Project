@@ -229,7 +229,7 @@ if __name__ == '__main__':
             if not os.path.exists(modality_dir):
                 os.makedirs(modality_dir)
     
-    qp_list=[55,54,40,39,38]
+    qp_list=[54,40,39,38]
     for qp in qp_list:
         # 添加传统编解码qp信息
         config['qp']=qp

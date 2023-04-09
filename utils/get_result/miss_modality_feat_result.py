@@ -42,5 +42,5 @@ def get_result(root_dir,modality,quality):
 
 
 if __name__=='__main__':
-    get_feat_compared_result(r'D:\BaiduNetdiskDownload\BaiduNetdiskDownload\upload_result\their\mmin_IEMOCAP_block_5_run1',
-    r'D:\BaiduNetdiskDownload\BaiduNetdiskDownload\their_feat_compared.csv')
+    get_feat_compared_result(r'/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline/feat_result/ours/mmin_IEMOCAP_block_5_run2',
+    r'./tmp.csv')

@@ -8,6 +8,7 @@ r'''通过trad_result文件夹中的size文件获得相应的kbps结果,要运�
 audio: 需要先运行make_trad_audio.py获得size文件
 video: 需要先运行make_trad_video_thread.py获得size文件
 text: 需要先运行make_trad_text.py获得size文件
+还需要运行make_time.py获得time.h5文件
 '''
 
 def get_kbps(size_dict,config):
@@ -60,7 +61,7 @@ def get_video_kbps(config):
 
 def get_audio_kbps(config):
     dir_name='./trad_result/A'
-    new_lines='set_kbps,kbps\n'
+    new_lines='set_bitrate,kbps\n'
     for file in sorted(os.listdir(dir_name)):
         if file.endswith('size.txt'):
             with open(os.path.join(dir_name,file),'r') as f:

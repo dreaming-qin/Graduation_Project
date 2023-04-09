@@ -35,6 +35,6 @@ def get_metric(file):
     return acc,uar,f1
 
 if __name__=='__main__':
-    get_result(r'D:\BaiduNetdiskDownload\BaiduNetdiskDownload\upload_result\ours\mmin_IEMOCAP_block_5_run0',
-    r'D:\BaiduNetdiskDownload\BaiduNetdiskDownload\upload_result\their\mmin_IEMOCAP_block_5_run1',
-    r'D:\BaiduNetdiskDownload\BaiduNetdiskDownload\ours_their.csv')
+    get_result(r'/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline/feat_result/ours/mmin_IEMOCAP_block_5_run2',
+    r'/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline/feat_result/ours/mmin_IEMOCAP_block_5_run4',
+    r'./tmp.csv')

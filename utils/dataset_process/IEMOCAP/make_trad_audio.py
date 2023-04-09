@@ -9,17 +9,17 @@ import shutil
 import subprocess
 
 
-cmd = 'opusenc --cvbr --bitrate 2 ../dataset/IEMOCAP_full_release/Session2/sentences/wav/Ses02F_script03_1/Ses02F_script03_1_M001.wav ./tmp/input.opus'
-lines=subprocess.getstatusoutput(cmd)[1]
-lines=lines.split('\n')
-for line in lines:
-    line=line.strip()
-    if line.startswith('Bitrate'):
-        s_i=line.find('Bitrate')+9
-        e_i=line.find('kbit')
-        kbps=float(line[s_i:e_i])
-print(kbps)
-a=1
+# cmd = 'opusenc --cvbr --bitrate 2 --hard-cbr ../dataset/IEMOCAP_full_release/Session2/sentences/wav/Ses02F_script03_1/Ses02F_script03_1_M001.wav ./tmp/input.opus'
+# lines=subprocess.getstatusoutput(cmd)[1]
+# lines=lines.split('\n')
+# for line in lines:
+#     line=line.strip()
+#     if line.startswith('Bitrate'):
+#         s_i=line.find('Bitrate')+9
+#         e_i=line.find('kbit')
+#         kbps=float(line[s_i:e_i])
+# print(kbps)
+# a=1
 
 class OpenSMILEExtractor(object):
     ''' 抽取comparE特征, 输入音频路径, 输出npy数组, 每帧130d
@@ -110,7 +110,7 @@ def encode_and_decode(config):
         tmp_dir='./tmp'
         makedirs(tmp_dir)
 
-        cmd = "opusenc --bitrate {} {} {}".format(config['kbps'],wav_file, os.path.join(tmp_dir,'input.opus')) 
+        cmd = "opusenc --bitrate {} --hard-cbr {} {}".format(config['kbps'],wav_file, os.path.join(tmp_dir,'input.opus')) 
         lines=subprocess.getstatusoutput(cmd)[1]
         return lines
         
@@ -161,7 +161,7 @@ def encode_and_decode(config):
 def get_feature(config):
     print('start getting feature')
     extractor = OpenSMILEExtractor(opensmile_tool_dir='/home/haojun/docker/opensmile-3.0.1',
-        tmp_dir=os.path.join(config['feat_feature_root'],'openSMILEfeature'),
+        tmp_dir=os.path.join(config['trad_feature_root'],'openSMILEfeature'),
         no_tmp=True)
     all_utt_ids = get_all_utt_id(config)
     all_h5f = h5py.File(os.path.join(config['trad_feature_root'],'A/kbps{}.h5'.format(config['kbps'])), 'w')

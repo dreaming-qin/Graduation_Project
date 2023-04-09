@@ -22,7 +22,7 @@ def get_trad_result(root_dir,save_csv_file,qp,audio_kbps):
         kbps,acc,uar,f1=get_result(root_dir,modality,qp,audio_kbps)
         result[1]+=['qp{}+kbps{}'.format(qp,audio_kbps),kbps,acc,uar,f1]
     df = pd.DataFrame(result)
-    df.to_csv(save_csv_file,header=None,index=None)
+    df.to_csv(save_csv_file,header=None,index=None,mode='a')
     
 
 def get_result(root_dir,modality,qp,audio_kbps):
@@ -62,6 +62,6 @@ def get_result(root_dir,modality,qp,audio_kbps):
 
 
 if __name__=='__main__':
-    get_trad_result(r'/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline/feat_result/ours/mmin_IEMOCAP_block_5_run0',
-    r'./their_feat_compared.csv',
-    qp=56,audio_kbps=2)
+    get_trad_result(r'/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline/trad_result/trad/mmin_IEMOCAP_block_5_run0',
+    r'./tmp.csv',
+    qp=56,audio_kbps=5)

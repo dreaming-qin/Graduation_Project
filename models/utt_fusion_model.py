@@ -126,7 +126,8 @@ class UttFusionModel(BaseModel):
             self.feat_compress=self.feat.reshape(-1,3,length,height)
             # 模拟量化误差
             if self.isTrain:
-                self.feat=quantize_feature_train(self.feat)
+                a=1
+                # self.feat=quantize_feature_train(self.feat)
             else:
                 file_name='{:.4f}-{}'.format(self.time,str(uuid.uuid1()))
                 feature3D=save_compressed_feat(self.feat_compress,self.quality,

@@ -7,14 +7,12 @@ def auto_train_CAP(exp_No,gpu,compress_flag,type):
     mmin_train=True
     cv_iter=range(1,11)
     args_dict={'run_idx':exp_No,'gpu_ids':gpu,'embd_size':128,
-        'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
+        'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80,75,70,65,60','niter':100,
         'compress_flag':compress_flag,'save_compress_pic':True,
         'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':128,
         'input_dim_v':342}
     # 复制相应的raw feature
     # load config
-    pwd = os.path.abspath(__file__)
-    pwd = os.path.dirname(pwd)
     config_path = './data/config/IEMOCAP_config.json'
     config = json.load(open(config_path))
     # 选择视频raw feature
@@ -96,4 +94,4 @@ def auto_train_CAP(exp_No,gpu,compress_flag,type):
     os.system('cd feat_result/{}/ && rm -rf */*/*.npy */*/*.pth'.format(type))
 
 if __name__ =='__main__':
-    auto_train_CAP(exp_No=2,gpu=0,compress_flag=False,type='ours')
+    auto_train_CAP(exp_No=6,gpu=1,compress_flag=False,type='ours')
