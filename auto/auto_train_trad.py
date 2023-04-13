@@ -9,8 +9,6 @@ def auto_train_CAP(args_dict):
     type=args_dict['type']
     # 根据qp和kbps选择相应的raw feature
     # load config
-    pwd = os.path.abspath(__file__)
-    pwd = os.path.dirname(pwd)
     config_path = './data/config/IEMOCAP_config.json'
     config = json.load(open(config_path))
     # 选择视频raw feature
@@ -91,17 +89,22 @@ def auto_train_CAP(args_dict):
     os.system('cd trad_result/{}/ && rm -rf */*/*.npy */*/*.pth'.format(type))
 
 if __name__ =='__main__':
-    exp_No=0
+    exp_No=-1
     gpu=1
     compress_flag=False
-    type='trad'
+    type2='trad'
     # 视频选择
-    qp=56
+    qp_list=[56,55,54]
     # 音频选择
-    kbps=5
-    args_dict={'qp':qp,'kbps':kbps,'run_idx':exp_No,'gpu_ids':gpu,'type':type,'embd_size':128,
-        'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
-        'compress_flag':compress_flag,'save_compress_pic':True,
-        'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':128,
-        'input_dim_v':342}
-    auto_train_CAP(args_dict)
+    kbps_list=[2,3,5,7,9]
+    for qp in qp_list:
+        for kbps in kbps_list:
+            exp_No+=1
+            with open('./trad_result/trad/run_exp.txt','a') as f:
+                f.writelines('qp{},kbps{},expNo{}\n'.format(qp,kbps,exp_No))
+            args_dict={'qp':qp,'kbps':kbps,'run_idx':exp_No,'gpu_ids':gpu,'type':type2,'embd_size':128,
+                'feat_compress_size':'16,8','n_blocks':5,'quality':'0,95,90,85,80','niter':100,
+                'compress_flag':compress_flag,'save_compress_pic':False,
+                'checkpoints_dir':'./checkpoints','log_dir':'./logs','batch_size':128,
+                'input_dim_v':342}
+            auto_train_CAP(args_dict)

@@ -37,7 +37,7 @@
         "--output_dim","4", 
         "--cls_layers","128,128",
         "--dropout_rate","0.3",
-        "--niter","10", 
+        "--niter","100", 
         "--niter_decay","10", 
         "--in_mem", 
         "--beta1","0.9",

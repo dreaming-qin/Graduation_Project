@@ -127,7 +127,7 @@ class UttFusionModel(BaseModel):
             # 模拟量化误差
             if self.isTrain:
                 a=1
-                # self.feat=quantize_feature_train(self.feat)
+                self.feat=quantize_feature_train(self.feat)
             else:
                 file_name='{:.4f}-{}'.format(self.time,str(uuid.uuid1()))
                 feature3D=save_compressed_feat(self.feat_compress,self.quality,
@@ -137,7 +137,7 @@ class UttFusionModel(BaseModel):
                 self.feat=feature3D.reshape((-1,3*h*w))
 
         self.logits, self.ef_fusion_feat = self.netC(self.feat)
-        self.pred = F.softmax(self.logits, dim=-1)
+        self.pred = F.softmax(self.logits, dim=-1)        
         
     def backward(self):
         """Calculate the loss for back propagation"""

@@ -72,16 +72,16 @@ def encode_and_decode(config):
     # 整合所有结果
     save_dir='./trad_result/V'
     lines=['name,size(Byte)\n']
-    for txt_file in os.listdir(save_dir):
-        if txt_file.startswith('qp{}_index'.format(config['qp'])):
-            with open(os.path.join(save_dir,txt_file),'r') as f:
-                lines2=f.readlines()
-            lines.extend(lines2)
+    for i in range(config['thread']):
+        txt_file='qp{}_index{}.txt'.format(config['qp'],i+1)
+        with open(os.path.join(save_dir,txt_file),'r') as f:
+            lines2=f.readlines()
+        lines.extend(lines2)
     with open('./trad_result/V/qp{}_size.txt'.format(config['qp']),'w') as f:
         f.writelines(lines)
-    for txt_file in os.listdir(save_dir):
-        if txt_file.startswith('qp{}_index'.format(config['qp'])):
-            os.remove(os.path.join(save_dir,txt_file))
+    for i in range(config['thread']):
+        txt_file='qp{}_index{}.txt'.format(config['qp'],i+1)
+        os.remove(os.path.join(save_dir,txt_file))
 
 def _thread_encode_and_decode(config,utt_id_list,index):
     def encode(png_dir,VVCdir):
@@ -208,10 +208,10 @@ def get_feature(config):
         h5f[utt_id]=utt_feats
     h5f.close()
 
-def make_all_face(config):
+def make_trad_video(config):
     r'''供外部py文件的函数调用'''
     encode_and_decode(config)
-    get_feature(config)
+    # get_feature(config)
 
 if __name__ == '__main__':
     # load config
@@ -220,7 +220,7 @@ if __name__ == '__main__':
     config_path = os.path.join(pwd, '../../..', 'data/config', 'IEMOCAP_config.json')
     config = json.load(open(config_path))
     # 添加多进程信息
-    config['thread']=7
+    config['thread']=3
     # 创建文件夹
     save_dir_list = [config['trad_feature_root'],config['trad_data_root'],'trad_result']
     for save_dir in save_dir_list:
@@ -229,8 +229,8 @@ if __name__ == '__main__':
             if not os.path.exists(modality_dir):
                 os.makedirs(modality_dir)
     
-    qp_list=[54,40,39,38]
+    qp_list=[39,38]
     for qp in qp_list:
         # 添加传统编解码qp信息
         config['qp']=qp
-        make_all_face(config)
+        make_trad_video(config)

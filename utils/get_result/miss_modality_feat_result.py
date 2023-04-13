@@ -4,13 +4,13 @@ import pandas as pd
 # 获得特征压缩状态下的结果
 
 modality_list=['avl','azz','zvz','zzl','avz','azl','zvl']
-quality_list=[0,95,90,85,80]
+quality_list=[0,95,90,85,80,75,70,65,60]
 
 def get_feat_compared_result(root_dir,save_csv_file):
     r'''获得各个模态下的特征压缩率失真结果, 存到csv文件中'''
     result=[]
-    quality_index_map={0:1,95:2,90:3,85:4,80:5}
-    for _ in range(6):
+    quality_index_map={0:1,95:2,90:3,85:4,80:5,75:6,70:7,65:8,60:9}
+    for _ in range(len(quality_index_map)+1):
         result.append([])
     for modality in modality_list:
         result[0]+=[modality,'kbps','acc','uar','f1']
@@ -42,5 +42,5 @@ def get_result(root_dir,modality,quality):
 
 
 if __name__=='__main__':
-    get_feat_compared_result(r'/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline/feat_result/ours/mmin_IEMOCAP_block_5_run2',
+    get_feat_compared_result(r'/home/haojun/docker/code/Graduation_Project/Graduation_Project_baseline/feat_result/ours/mmin_IEMOCAP_block_5_run5',
     r'./tmp.csv')
